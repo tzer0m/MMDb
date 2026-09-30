@@ -57,6 +57,10 @@
             {
                 <span class="badge fs-2 rating-lg border border-secondary" style="min-width: 2.5em" title="Community Rating"></span>
             }
+            @if (isRated && Model.RatingDelta is double delta)
+            {
+                <span class="badge fs-2 rating-lg border border-secondary text-body d-flex align-items-center" title="My Rating minus Community Rating">@delta.ToString("+0.0;-0.0;0.0")</span>
+            }
             @if (isRated && User.Identity?.IsAuthenticated == true)
             {
                 <a asp-page="/Films/Edit" asp-route-id="@Model.FilmId" class="btn btn-outline-secondary fs-2 rating-lg d-flex align-items-center px-3 py-0" title="Edit" aria-label="Edit">
