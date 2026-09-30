@@ -20,3 +20,10 @@
   border-color: #adb5bd;
   box-shadow: 0 0 0 0.25rem rgba(173, 181, 189, 0.25);
 }
+
+/* Brand name in the navbar, matching the rounded, chunky logo. */
+.brand-name {
+  font-family: 'Fredoka', var(--bs-font-sans-serif);
+  font-weight: 700;
+  font-size: 1.5rem;
+}
