@@ -6,9 +6,9 @@ namespace MMDb.Options;
 public class TMDbOptions
 {
     /// <summary>
-    /// The configuration section name.
+    /// The base URL of the TMDb API.
     /// </summary>
-    public const string SectionName = "TMDb";
+    public string BaseUrl { get; set; } = string.Empty;
 
     /// <summary>
     /// The TMDb API read access token.

@@ -6,11 +6,6 @@ namespace MMDb.Options;
 public class JellyfinOptions
 {
     /// <summary>
-    /// The configuration section name.
-    /// </summary>
-    public const string SectionName = "Jellyfin";
-
-    /// <summary>
     /// The base URL of the Jellyfin server.
     /// </summary>
     public string BaseUrl { get; set; } = string.Empty;

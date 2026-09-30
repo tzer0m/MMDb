@@ -15,11 +15,6 @@ namespace MMDb.Services;
 public class TMDbClient(HttpClient http, IOptions<TMDbOptions> options)
 {
     /// <summary>
-    /// The base URL of the TMDb API.
-    /// </summary>
-    private const string BaseUrl = "https://api.themoviedb.org/3/";
-
-    /// <summary>
     /// JSON options matching TMDb's snake_case property names.
     /// </summary>
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
@@ -31,7 +26,7 @@ public class TMDbClient(HttpClient http, IOptions<TMDbOptions> options)
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<List<TMDbSearchResult>> SearchAsync(string query, CancellationToken cancellationToken = default)
     {
-        TMDbSearchResponse? response = await GetAsync<TMDbSearchResponse>($"search/movie?query={Uri.EscapeDataString(query)}&include_adult=false", cancellationToken);
+        TMDbSearchResponse? response = await GetAsync<TMDbSearchResponse>($"search/movie?query={Uri.EscapeDataString(query)}", cancellationToken);
         return response?.Results ?? [];
     }
 
@@ -53,7 +48,7 @@ public class TMDbClient(HttpClient http, IOptions<TMDbOptions> options)
     /// <param name="cancellationToken">The cancellation token.</param>
     private async Task<T?> GetAsync<T>(string path, CancellationToken cancellationToken) where T : class
     {
-        using HttpRequestMessage request = new(HttpMethod.Get, BaseUrl + path);
+        using HttpRequestMessage request = new(HttpMethod.Get, options.Value.BaseUrl + path);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", options.Value.ApiReadAccessToken);
         using HttpResponseMessage response = await http.SendAsync(request, cancellationToken);
         if (response.StatusCode == HttpStatusCode.NotFound)

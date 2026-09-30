@@ -6,9 +6,9 @@ namespace MMDb.Options;
 public class OMDbOptions
 {
     /// <summary>
-    /// The configuration section name.
+    /// The base URL of the OMDb API.
     /// </summary>
-    public const string SectionName = "OMDb";
+    public string BaseUrl { get; set; } = string.Empty;
 
     /// <summary>
     /// The OMDb API key.
