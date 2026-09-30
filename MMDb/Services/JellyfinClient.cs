@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using MMDb.Models;
 using MMDb.Models.Jellyfin;
@@ -12,7 +13,8 @@ namespace MMDb.Services;
 /// </summary>
 /// <param name="http">The HTTP client.</param>
 /// <param name="options">The Jellyfin options.</param>
-public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options)
+/// <param name="cache">The memory cache for the library list.</param>
+public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options, IMemoryCache cache)
 {
     /// <summary>
     /// Finds a movie in the library by IMDb ID, falling back to TMDb ID.
@@ -23,6 +25,33 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options)
     public async Task<JellyfinItem?> FindMovieAsync(string? imdbId, int? tmdbId, CancellationToken cancellationToken = default)
     {
         List<JellyfinItem> movies = await GetMoviesAsync(cancellationToken);
+        return Match(movies, imdbId, tmdbId);
+    }
+
+    /// <summary>
+    /// Checks whether a movie is in the library, using a briefly cached copy of the library list.
+    /// </summary>
+    /// <param name="imdbId">The IMDb ID.</param>
+    /// <param name="tmdbId">The TMDb ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<bool> IsInLibraryAsync(string? imdbId, int? tmdbId, CancellationToken cancellationToken = default)
+    {
+        List<JellyfinItem> movies = await cache.GetOrCreateAsync("jellyfin-movies", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = options.Value.LibraryCacheDuration;
+            return await GetMoviesAsync(cancellationToken);
+        }) ?? [];
+        return Match(movies, imdbId, tmdbId) is not null;
+    }
+
+    /// <summary>
+    /// Finds a movie in a list of library items by IMDb ID, falling back to TMDb ID.
+    /// </summary>
+    /// <param name="movies">The library items.</param>
+    /// <param name="imdbId">The IMDb ID.</param>
+    /// <param name="tmdbId">The TMDb ID.</param>
+    private static JellyfinItem? Match(List<JellyfinItem> movies, string? imdbId, int? tmdbId)
+    {
         return movies.FirstOrDefault(x => imdbId is not null && string.Equals(x.IMDbId, imdbId, StringComparison.OrdinalIgnoreCase)) ?? movies.FirstOrDefault(x => tmdbId is not null && x.TMDbId == tmdbId);
     }
 

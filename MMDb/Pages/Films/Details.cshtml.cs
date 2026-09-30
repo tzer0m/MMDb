@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using MMDb.Data;
+using MMDb.Helpers;
 using MMDb.Models;
 using MMDb.Services;
 
@@ -12,7 +13,8 @@ namespace MMDb.Pages.Films;
 /// </summary>
 /// <param name="db">The database context.</param>
 /// <param name="filmPeople">The film people service.</param>
-public class DetailsModel(MMDbContext db, FilmPeopleService filmPeople) : PageModel
+/// <param name="jellyfin">The Jellyfin client.</param>
+public class DetailsModel(MMDbContext db, FilmPeopleService filmPeople, JellyfinClient jellyfin) : PageModel
 {
     /// <summary>
     /// The film being displayed.
@@ -38,6 +40,7 @@ public class DetailsModel(MMDbContext db, FilmPeopleService filmPeople) : PageMo
         }
         Film = film;
         People = await filmPeople.LoadAsync(film.Credits, film.FilmId, cancellationToken);
+        ViewData["ShowSwagBagger"] = await SwagBaggerButton.ShouldShowAsync(User, jellyfin, film, cancellationToken);
         return Page();
     }
 }

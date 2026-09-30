@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using MMDb.Data;
+using MMDb.Helpers;
 using MMDb.Models;
 using MMDb.Services;
 
@@ -61,6 +62,7 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, Film
             return NotFound();
         }
         Input.WatchedOn = DateOnly.FromDateTime(DateTime.Today);
+        ViewData["ShowSwagBagger"] = await SwagBaggerButton.ShouldShowAsync(User, jellyfin, Film, cancellationToken);
         return Page();
     }
 
@@ -81,7 +83,12 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, Film
         }
         if (!ModelState.IsValid)
         {
-            return await LoadPreviewAsync(cancellationToken) ? Page() : NotFound();
+            if (!await LoadPreviewAsync(cancellationToken))
+            {
+                return NotFound();
+            }
+            ViewData["ShowSwagBagger"] = await SwagBaggerButton.ShouldShowAsync(User, jellyfin, Film, cancellationToken);
+            return Page();
         }
         Film? film = await BuildFilmAsync(cancellationToken);
         if (film is null)

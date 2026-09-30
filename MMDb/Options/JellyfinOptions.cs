@@ -19,4 +19,9 @@ public class JellyfinOptions
     /// The ID of the Jellyfin user whose watch history is read.
     /// </summary>
     public string UserId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// How long the list of films in the Jellyfin library is cached when checking whether a film is there.
+    /// </summary>
+    public TimeSpan LibraryCacheDuration { get; set; } = TimeSpan.FromMinutes(5);
 }

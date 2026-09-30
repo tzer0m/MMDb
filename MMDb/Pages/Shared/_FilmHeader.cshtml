@@ -72,7 +72,7 @@
         }
 
         <div class="d-flex flex-wrap gap-3 mt-3">
-            @if (!isRated && User.Identity?.IsAuthenticated == true)
+            @if (ViewData["ShowSwagBagger"] is true)
             {
                 <a href="@swagBaggerUrl" target="_blank" rel="noopener" class="btn btn-outline-secondary d-flex align-items-center gap-2" title="Search SwagBagger">
                     <img src="/img/swagbagger.svg" alt="SwagBagger" height="20" />
