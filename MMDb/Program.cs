@@ -11,6 +11,7 @@ builder.Services.Configure<OMDbOptions>(builder.Configuration.GetSection("OMDb")
 builder.Services.Configure<JellyfinOptions>(builder.Configuration.GetSection("Jellyfin"));
 builder.Services.Configure<ExternalLinkOptions>(builder.Configuration.GetSection("ExternalLinks"));
 builder.Services.Configure<RatingsRefreshOptions>(builder.Configuration.GetSection("RatingsRefresh"));
+builder.Services.Configure<PeopleOptions>(builder.Configuration.GetSection("People"));
 builder.Services.AddHttpClient<TMDbClient>();
 builder.Services.AddHttpClient<OMDbClient>();
 builder.Services.AddHttpClient<JellyfinClient>();

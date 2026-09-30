@@ -18,18 +18,30 @@
         </div>
     </div>
     <div class="col-12 col-md-10">
-        <h1 class="mb-1">@Model.Person.Name</h1>
-        <p class="text-muted mb-0">
-            @Model.Films.Count @(Model.Films.Count == 1 ? "film" : "films")
-            @if (Model.AverageMyRating is double averageMyRating)
-            {
-                <text>&middot; avg MR @averageMyRating.ToString("0.0")</text>
-            }
-            @if (Model.AverageCommunityRating is double averageCommunityRating)
-            {
-                <text>&middot; avg CR @averageCommunityRating.ToString("0.0")</text>
-            }
-        </p>
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+            <div>
+                <h1 class="mb-1">@Model.Person.Name</h1>
+                <p class="text-muted mb-0">@Model.BirthLine</p>
+            </div>
+            <div class="d-flex align-items-stretch gap-2">
+                @if (Model.AverageMyRating is double averageMyRating)
+                {
+                    <span class="badge fs-2 text-black" style="@RatingColour.StyleForRating(averageMyRating)" title="Average My Rating">@averageMyRating.ToString("0.0")</span>
+                }
+                @if (Model.AverageCommunityRating is double averageCommunityRating)
+                {
+                    <span class="badge fs-2 text-black" style="@RatingColour.StyleForRating(averageCommunityRating)" title="Average Community Rating">@averageCommunityRating.ToString("0.0")</span>
+                }
+                else
+                {
+                    <span class="badge fs-2 border border-secondary" style="min-width: 2.5em" title="Average Community Rating"></span>
+                }
+            </div>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.BiographySummary))
+        {
+            <p style="white-space: pre-line">@Model.BiographySummary</p>
+        }
     </div>
 </div>
 

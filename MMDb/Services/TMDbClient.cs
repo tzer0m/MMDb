@@ -41,6 +41,16 @@ public class TMDbClient(HttpClient http, IOptions<TMDbOptions> options)
     }
 
     /// <summary>
+    /// Gets a person's details, returning null if TMDb has no such person.
+    /// </summary>
+    /// <param name="personId">The TMDb person ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<TMDbPerson?> GetPersonAsync(int personId, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<TMDbPerson>($"person/{personId}", cancellationToken);
+    }
+
+    /// <summary>
     /// Sends an authenticated GET request and deserialises the response, returning null on 404.
     /// </summary>
     /// <typeparam name="T">The response type.</typeparam>

@@ -70,6 +70,28 @@ public class FilmDataService(MMDbContext db, TMDbClient tmdb, OMDbClient omdb)
     }
 
     /// <summary>
+    /// Copies a person's biography, dates and birthplace from TMDb, returning false if TMDb has no such person.
+    /// </summary>
+    /// <param name="person">The person to update.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<bool> ApplyPersonDetailsAsync(Person person, CancellationToken cancellationToken = default)
+    {
+        TMDbPerson? details = await tmdb.GetPersonAsync(person.PersonId, cancellationToken);
+        if (details is null)
+        {
+            return false;
+        }
+        person.Name = details.Name;
+        person.ProfilePath = details.ProfilePath ?? person.ProfilePath;
+        person.Biography = string.IsNullOrWhiteSpace(details.Biography) ? null : details.Biography;
+        person.Birthday = TMDbPerson.ParseDate(details.Birthday);
+        person.Deathday = TMDbPerson.ParseDate(details.Deathday);
+        person.PlaceOfBirth = string.IsNullOrWhiteSpace(details.PlaceOfBirth) ? null : details.PlaceOfBirth;
+        person.DetailsUpdatedAt = DateTime.UtcNow;
+        return true;
+    }
+
+    /// <summary>
     /// Syncs a film's director and top 10 cast credits, creating or updating the people involved.
     /// </summary>
     /// <param name="film">The film to update.</param>
