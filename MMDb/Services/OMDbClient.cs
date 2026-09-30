@@ -18,7 +18,7 @@ public class OMDbClient(HttpClient http, IOptions<OMDbOptions> options)
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     /// <summary>
-    /// Gets a movie's ratings by its IMDb ID, returning null if OMDb has no match.
+    /// Gets a movie's ratings by its IMDb ID, returning null if OMDb has no match and throwing if the daily limit is reached.
     /// </summary>
     /// <param name="imdbId">The IMDb ID, e.g. tt0113277.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -28,6 +28,10 @@ public class OMDbClient(HttpClient http, IOptions<OMDbOptions> options)
         using HttpResponseMessage response = await http.GetAsync(url, cancellationToken);
         response.EnsureSuccessStatusCode();
         OMDbMovie? movie = await response.Content.ReadFromJsonAsync<OMDbMovie>(JsonOptions, cancellationToken);
+        if (movie is { Found: false } && movie.Error?.Contains("limit", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            throw new HttpRequestException($"OMDb: {movie.Error}");
+        }
         return movie is { Found: true } ? movie : null;
     }
 }
