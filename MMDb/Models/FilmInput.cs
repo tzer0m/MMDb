@@ -17,7 +17,7 @@ public class FilmInput
     /// <summary>
     /// The date I watched the film.
     /// </summary>
-    [Display(Name = "Watched on")]
+    [Display(Name = "Watched On")]
     [DataType(DataType.Date)]
     public DateOnly? WatchedOn { get; set; }
 

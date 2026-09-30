@@ -5,12 +5,12 @@
 @using MMDb.Options
 @inject IOptions<TMDbOptions> TMDbOptions
 @{
-    ViewData["Title"] = "Add film";
+    ViewData["Title"] = "Add Film";
     string imageBaseUrl = TMDbOptions.Value.ImageBaseUrl;
 }
 
-<p><a asp-page="/Index">&larr; All films</a></p>
-<h1 class="h3 mb-3">Add film</h1>
+<p><a asp-page="/Index">&larr; All Films</a></p>
+<h1 class="h3 mb-3">Add Film</h1>
 
 @if (Model.Selected is TMDbMovie movie)
 {
@@ -26,7 +26,7 @@
                 <p class="fst-italic text-muted mb-1">@movie.Tagline</p>
             }
             <p class="small mb-2">@movie.Overview</p>
-            <a asp-page="/Films/Add" asp-route-query="@Model.Query" class="small">Pick a different film</a>
+            <a asp-page="/Films/Add" asp-route-query="@Model.Query" class="small">Pick a Different Film</a>
         </div>
     </div>
 
@@ -44,7 +44,7 @@
             <span asp-validation-for="Input.WatchedOn" class="text-danger small"></span>
         </div>
         <div class="col-12">
-            <button type="submit" class="btn btn-primary">Add film</button>
+            <button type="submit" class="btn btn-primary">Add Film</button>
             <a asp-page="/Index" class="btn btn-link">Cancel</a>
         </div>
     </form>
@@ -52,7 +52,7 @@
 else
 {
     <form method="get" class="d-flex gap-2 mb-4" style="max-width: 32rem">
-        <input type="search" name="query" value="@Model.Query" class="form-control" placeholder="Search TMDb for a film" autofocus />
+        <input type="search" name="query" value="@Model.Query" class="form-control" placeholder="Search TMDb for a Film" autofocus />
         <button type="submit" class="btn btn-primary">Search</button>
     </form>
 
