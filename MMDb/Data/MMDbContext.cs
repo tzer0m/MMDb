@@ -24,5 +24,8 @@ public class MMDbContext(DbContextOptions<MMDbContext> options) : DbContext(opti
         modelBuilder.Entity<Film>().Property(x => x.Director).HasMaxLength(200);
         modelBuilder.Entity<Film>().ToTable(x => x.HasCheckConstraint("CK_Films_Rating", "\"Rating\" BETWEEN 1 AND 10"));
         modelBuilder.Entity<Film>().HasIndex(x => x.Title);
+        modelBuilder.Entity<Film>().HasIndex(x => x.TMDbId).IsUnique();
+        modelBuilder.Entity<Film>().HasIndex(x => x.IMDbId);
+        modelBuilder.Entity<Film>().Property(x => x.IMDbId).HasMaxLength(20);
     }
 }

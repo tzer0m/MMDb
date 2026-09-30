@@ -13,6 +13,16 @@ public class Film
     public int FilmId { get; set; }
 
     /// <summary>
+    /// The TMDb movie ID.
+    /// </summary>
+    public int? TMDbId { get; set; }
+
+    /// <summary>
+    /// The IMDb ID, e.g. tt0113277.
+    /// </summary>
+    public string? IMDbId { get; set; }
+
+    /// <summary>
     /// The film's title.
     /// </summary>
     public string Title { get; set; } = string.Empty;
@@ -36,6 +46,61 @@ public class Film
     /// A short synopsis of the film.
     /// </summary>
     public string? Overview { get; set; }
+
+    /// <summary>
+    /// The film's tagline.
+    /// </summary>
+    public string? Tagline { get; set; }
+
+    /// <summary>
+    /// The film's genres.
+    /// </summary>
+    public List<string> Genres { get; set; } = [];
+
+    /// <summary>
+    /// The top-billed cast, in billing order.
+    /// </summary>
+    public List<string> Cast { get; set; } = [];
+
+    /// <summary>
+    /// The TMDb poster image path.
+    /// </summary>
+    public string? PosterPath { get; set; }
+
+    /// <summary>
+    /// The TMDb backdrop image path.
+    /// </summary>
+    public string? BackdropPath { get; set; }
+
+    /// <summary>
+    /// The average TMDb user rating, out of 10.
+    /// </summary>
+    public double? TMDbRating { get; set; }
+
+    /// <summary>
+    /// The IMDb rating, out of 10.
+    /// </summary>
+    public double? IMDbRating { get; set; }
+
+    /// <summary>
+    /// The number of IMDb votes.
+    /// </summary>
+    public int? IMDbVotes { get; set; }
+
+    /// <summary>
+    /// The Rotten Tomatoes score, as a percentage.
+    /// </summary>
+    public int? RottenTomatoes { get; set; }
+
+    /// <summary>
+    /// The Metacritic score, out of 100.
+    /// </summary>
+    public int? Metacritic { get; set; }
+
+    /// <summary>
+    /// When the external ratings were last refreshed (UTC).
+    /// </summary>
+    public DateTime? RatingsUpdatedAt { get; set; }
 
     /// <summary>
     /// My rating, from 1 to 10.
