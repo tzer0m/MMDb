@@ -31,6 +31,16 @@ public class TMDbSearchResult
     public string? Overview { get; set; }
 
     /// <summary>
+    /// The average TMDb user rating, out of 10.
+    /// </summary>
+    public double VoteAverage { get; set; }
+
+    /// <summary>
+    /// The number of TMDb user ratings.
+    /// </summary>
+    public int VoteCount { get; set; }
+
+    /// <summary>
     /// The release year, parsed from the release date.
     /// </summary>
     public int? Year => ReleaseDate is { Length: >= 4 } && int.TryParse(ReleaseDate[..4], out int year) ? year : null;

@@ -119,7 +119,7 @@
         <tbody>
             @foreach (TopRatedFilm film in Model.TopRated)
             {
-                string href = film.FilmId is int filmId ? Url.Page("/Films/Details", new { id = filmId })! : User.Identity?.IsAuthenticated == true ? Url.Page("/Films/Add", new { tmdbId = film.TMDbId })! : string.Format(ExternalLinks.Value.TMDb, film.TMDbId);
+                string href = film.FilmId is int filmId ? Url.Page("/Films/Details", new { id = filmId })! : Url.Page("/Films/Preview", new { tmdbId = film.TMDbId })!;
                 <tr data-href="@href" class="@(film.FilmId is null ? "" : "seen-film")" title="@(film.FilmId is null ? "" : "Seen")">
                     <td class="p-1">
                         @if (film.PosterPath is not null)

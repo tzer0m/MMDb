@@ -19,9 +19,9 @@
 <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
     <form id="film-search" class="input-group flex-grow-1 w-auto">
         <input type="search" id="film-search-input" class="form-control" placeholder="Search Titles" aria-label="Search Titles" />
-        <button type="submit" class="btn btn-outline-secondary d-flex align-items-center" title="Search" aria-label="Search">
+        <a id="film-lookup" asp-page="/Films/Search" class="btn btn-secondary d-flex align-items-center" title="Search TMDb" aria-label="Search TMDb">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" /></svg>
-        </button>
+        </a>
     </form>
     <div id="film-paging"></div>
 </div>
@@ -98,29 +98,18 @@
             }
         });
         const searchInput = document.getElementById('film-search-input');
-        const addFilmUrl = '@Url.Page("/Films/Add")';
-        const canAdd = @(User.Identity?.IsAuthenticated == true ? "true" : "false");
-        films.on('draw', () => {
-            const query = searchInput.value.trim();
-            const emptyCell = document.querySelector('#films tbody td.dt-empty');
-            if (!emptyCell || !query) {
-                return;
-            }
-            if (!canAdd) {
-                emptyCell.textContent = 'Movie not found.';
-                return;
-            }
-            const link = document.createElement('a');
-            link.href = `${addFilmUrl}?query=${encodeURIComponent(query)}`;
-            link.textContent = `Movie not found, add "${query}"?`;
-            emptyCell.replaceChildren(link);
+        // The search button looks the current search up on TMDb.
+        document.getElementById('film-lookup').addEventListener('click', event => {
+            event.currentTarget.href = `${event.currentTarget.pathname}?query=${encodeURIComponent(searchInput.value.trim())}`;
         });
         searchInput.addEventListener('input', () => films.search(searchInput.value).draw());
         // Re-apply a search the browser restores when navigating back.
         window.addEventListener('pageshow', () => films.search(searchInput.value).draw());
+        // Pressing Enter looks the search up on TMDb, like the search button.
         document.getElementById('film-search').addEventListener('submit', event => {
             event.preventDefault();
-            films.search(searchInput.value).draw();
+            const lookup = document.getElementById('film-lookup');
+            window.location.href = `${lookup.pathname}?query=${encodeURIComponent(searchInput.value.trim())}`;
         });
     </script>
 }

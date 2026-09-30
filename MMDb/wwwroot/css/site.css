@@ -81,8 +81,9 @@
   }
 }
 
-/* Films I have already seen in a talent's Other Roles table: faded and fully greyscale, including posters and ratings. */
-.seen-film > td {
+/* Films I have already seen in Other Roles and lookup results: faded and fully greyscale, including posters and ratings. */
+.seen-film > td,
+.list-group-item.seen-film {
   opacity: 0.3;
   filter: grayscale(1);
 }

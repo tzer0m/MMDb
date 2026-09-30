@@ -1,0 +1,58 @@
+﻿@page "/film/lookup"
+@model MMDb.Pages.Films.SearchModel
+@using Microsoft.Extensions.Options
+@using MMDb.Models.TMDb
+@using MMDb.Options
+@inject IOptions<TMDbOptions> TMDbOptions
+@{
+    ViewData["Title"] = string.IsNullOrWhiteSpace(Model.Query) ? "Search" : $"Search: {Model.Query}";
+    string imageBaseUrl = TMDbOptions.Value.ImageBaseUrl;
+}
+
+<form method="get" class="input-group mb-3">
+    <input type="search" name="query" value="@Model.Query" class="form-control" placeholder="Search TMDb for a Film" aria-label="Search TMDb for a Film" autofocus />
+    <button type="submit" class="btn btn-outline-secondary d-flex align-items-center" title="Search" aria-label="Search">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" /></svg>
+    </button>
+</form>
+
+@if (!string.IsNullOrWhiteSpace(Model.Query) && Model.Results.Count == 0)
+{
+    <p class="text-muted">No films found for "@Model.Query".</p>
+}
+
+<div class="list-group">
+    @foreach (TMDbSearchResult result in Model.Results)
+    {
+        bool isRated = Model.ExistingFilms.TryGetValue(result.Id, out Film? rated);
+        string href = isRated ? Url.Page("/Films/Details", new { id = rated!.FilmId })! : Url.Page("/Films/Preview", new { tmdbId = result.Id, query = Model.Query })!;
+        <a href="@href" class="list-group-item list-group-item-action d-flex gap-3 align-items-start @(isRated ? "seen-film" : "")" title="@(isRated ? "Seen" : "")">
+            @if (result.PosterPath is not null)
+            {
+                <img src="@(imageBaseUrl)w92@(result.PosterPath)" alt="" class="rounded" width="43" height="64" loading="lazy" />
+            }
+            else
+            {
+                <div class="rounded bg-secondary-subtle flex-shrink-0" style="width: 43px; height: 64px"></div>
+            }
+            <div class="flex-grow-1 overflow-hidden">
+                <div class="fw-semibold">@result.Title <span class="text-muted fw-normal">@(result.Year is int year ? $"({year})" : "")</span></div>
+                @if (Model.Directors.TryGetValue(result.Id, out string? director) && !string.IsNullOrEmpty(director))
+                {
+                    <div class="small">@director</div>
+                }
+                <div class="small text-muted text-truncate">@result.Overview</div>
+            </div>
+            <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                @if (isRated && rated!.CommunityRating is double communityRating)
+                {
+                    <span class="badge fs-6 text-black" style="@RatingColour.StyleForRating(communityRating)" title="Community Rating">@communityRating.ToString("0.0")</span>
+                }
+                else if (result.VoteCount > 0)
+                {
+                    <span class="badge fs-6 text-black" style="@RatingColour.StyleForRating(result.VoteAverage, 0, 10)" title="TMDb Rating">@result.VoteAverage.ToString("0.0")</span>
+                }
+            </div>
+        </a>
+    }
+</div>

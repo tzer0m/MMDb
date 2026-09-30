@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using MMDb.Data;
 using MMDb.Models;
+using MMDb.Services;
 
 namespace MMDb.Pages.Films;
 
@@ -10,7 +11,8 @@ namespace MMDb.Pages.Films;
 /// Shows the full details of a single film, its director and top cast, and my other films they appear in.
 /// </summary>
 /// <param name="db">The database context.</param>
-public class DetailsModel(MMDbContext db) : PageModel
+/// <param name="filmPeople">The film people service.</param>
+public class DetailsModel(MMDbContext db, FilmPeopleService filmPeople) : PageModel
 {
     /// <summary>
     /// The film being displayed.
@@ -18,24 +20,9 @@ public class DetailsModel(MMDbContext db) : PageModel
     public Film Film { get; set; } = null!;
 
     /// <summary>
-    /// The film's director, if known.
+    /// The film's director and top cast, with my other films they appear in.
     /// </summary>
-    public Person? Director { get; set; }
-
-    /// <summary>
-    /// The top five billed cast members.
-    /// </summary>
-    public List<Person> Cast { get; set; } = [];
-
-    /// <summary>
-    /// The character each cast member played, keyed by person ID.
-    /// </summary>
-    public Dictionary<int, string> Characters { get; set; } = [];
-
-    /// <summary>
-    /// My other rated films for each person, keyed by person ID, highest rated first.
-    /// </summary>
-    public Dictionary<int, List<Film>> OtherFilms { get; set; } = [];
+    public FilmPeople People { get; set; } = new();
 
     /// <summary>
     /// Loads the film, its people and their other rated films.
@@ -50,16 +37,7 @@ public class DetailsModel(MMDbContext db) : PageModel
             return NotFound();
         }
         Film = film;
-        Director = film.Credits.Where(x => x.Role == CreditRole.Director).OrderBy(x => x.Order).Select(x => x.Person).FirstOrDefault();
-        Cast = [.. film.Credits.Where(x => x.Role == CreditRole.Cast).OrderBy(x => x.Order).Take(5).Select(x => x.Person)];
-        Characters = film.Credits.Where(x => x.Role == CreditRole.Cast && x.Character != null).GroupBy(x => x.PersonId).ToDictionary(x => x.Key, x => x.First().Character!);
-        List<int> personIds = [.. Cast.Select(x => x.PersonId)];
-        if (Director is not null)
-        {
-            personIds.Add(Director.PersonId);
-        }
-        List<FilmCredit> otherCredits = await db.FilmCredits.AsNoTracking().Include(x => x.Film).Where(x => personIds.Contains(x.PersonId) && x.FilmId != id).ToListAsync(cancellationToken);
-        OtherFilms = personIds.Distinct().ToDictionary(personId => personId, personId => otherCredits.Where(x => x.PersonId == personId).Select(x => x.Film).DistinctBy(x => x.FilmId).OrderByDescending(x => x.Rating).ThenBy(x => x.Title).ToList());
+        People = await filmPeople.LoadAsync(film.Credits, film.FilmId, cancellationToken);
         return Page();
     }
 }

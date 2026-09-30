@@ -20,6 +20,7 @@ builder.Services.AddHttpClient<TMDbClient>();
 builder.Services.AddHttpClient<OMDbClient>();
 builder.Services.AddHttpClient<JellyfinClient>();
 builder.Services.AddScoped<FilmDataService>();
+builder.Services.AddScoped<FilmPeopleService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddHostedService<RatingsRefreshService>();
 builder.Services.AddHealthChecks().AddDbContextCheck<MMDbContext>();
@@ -62,10 +63,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// Everything is public except adding and editing films.
+// Everything is public except editing films; adding checks sign-in when the form is posted.
 builder.Services.AddRazorPages(options =>
 {
-    options.Conventions.AuthorizePage("/Films/Add");
     options.Conventions.AuthorizePage("/Films/Edit");
 });
 
