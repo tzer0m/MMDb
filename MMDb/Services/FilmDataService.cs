@@ -83,6 +83,7 @@ public class FilmDataService(MMDbContext db, TMDbClient tmdb, OMDbClient omdb)
         }
         person.Name = details.Name;
         person.ProfilePath = details.ProfilePath ?? person.ProfilePath;
+        person.IMDbId = string.IsNullOrWhiteSpace(details.ImdbId) ? null : details.ImdbId;
         person.Biography = string.IsNullOrWhiteSpace(details.Biography) ? null : details.Biography;
         person.Birthday = TMDbPerson.ParseDate(details.Birthday);
         person.Deathday = TMDbPerson.ParseDate(details.Deathday);

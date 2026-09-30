@@ -18,6 +18,11 @@ public class TMDbPerson
     public string Name { get; set; } = string.Empty;
 
     /// <summary>
+    /// The IMDb person ID, e.g. nm0000151.
+    /// </summary>
+    public string? ImdbId { get; set; }
+
+    /// <summary>
     /// The person's biography.
     /// </summary>
     public string? Biography { get; set; }

@@ -21,6 +21,11 @@ public class Person
     public string? ProfilePath { get; set; }
 
     /// <summary>
+    /// The IMDb person ID, e.g. nm0000151.
+    /// </summary>
+    public string? IMDbId { get; set; }
+
+    /// <summary>
     /// The person's biography.
     /// </summary>
     public string? Biography { get; set; }

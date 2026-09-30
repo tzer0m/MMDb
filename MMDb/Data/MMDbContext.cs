@@ -39,6 +39,7 @@ public class MMDbContext(DbContextOptions<MMDbContext> options) : DbContext(opti
         modelBuilder.Entity<Film>().Property(x => x.IMDbId).HasMaxLength(20);
         modelBuilder.Entity<Person>().Property(x => x.PersonId).ValueGeneratedNever();
         modelBuilder.Entity<Person>().Property(x => x.Name).HasMaxLength(200);
+        modelBuilder.Entity<Person>().Property(x => x.IMDbId).HasMaxLength(20);
         modelBuilder.Entity<FilmCredit>().HasKey(x => new { x.FilmId, x.PersonId, x.Role });
         modelBuilder.Entity<FilmCredit>().HasOne(x => x.Film).WithMany(x => x.Credits).HasForeignKey(x => x.FilmId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<FilmCredit>().HasOne(x => x.Person).WithMany(x => x.Credits).HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Cascade);

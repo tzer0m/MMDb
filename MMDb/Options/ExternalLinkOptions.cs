@@ -16,6 +16,11 @@ public class ExternalLinkOptions
     public string IMDb { get; set; } = string.Empty;
 
     /// <summary>
+    /// The IMDb person page, with {0} as the person's IMDb ID.
+    /// </summary>
+    public string IMDbPerson { get; set; } = string.Empty;
+
+    /// <summary>
     /// The Rotten Tomatoes search page, with {0} as the URL-encoded title.
     /// </summary>
     public string RottenTomatoes { get; set; } = string.Empty;

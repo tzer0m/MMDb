@@ -3,6 +3,7 @@
 @using Microsoft.Extensions.Options
 @using MMDb.Options
 @inject IOptions<TMDbOptions> TMDbOptions
+@inject IOptions<ExternalLinkOptions> ExternalLinks
 @{
     ViewData["Title"] = Model.Person.Name;
     string imageBaseUrl = TMDbOptions.Value.ImageBaseUrl;
@@ -20,7 +21,15 @@
     <div class="col-12 col-md-10">
         <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
             <div>
-                <h1 class="mb-1">@Model.Person.Name</h1>
+                <div class="d-flex align-items-center gap-3 mb-1">
+                    <h1 class="mb-0">@Model.Person.Name</h1>
+                    @if (Model.Person.IMDbId is string imdbId)
+                    {
+                        <a href="@string.Format(ExternalLinks.Value.IMDbPerson, imdbId)" target="_blank" rel="noopener" class="btn btn-outline-secondary d-inline-flex align-items-center" title="IMDb">
+                            <img src="/img/imdb.svg" alt="IMDb" height="20" />
+                        </a>
+                    }
+                </div>
                 <p class="text-muted mb-0">@Model.BirthLine</p>
             </div>
             <div class="d-flex align-items-stretch gap-2">
