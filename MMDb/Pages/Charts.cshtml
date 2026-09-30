@@ -1,0 +1,14 @@
+﻿@page "/charts"
+@model ChartsModel
+@{
+    ViewData["Title"] = "Charts";
+}
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <partial name="_RatingChart" model='("My Ratings", Model.MyRatingCounts)' />
+    </div>
+    <div class="col-md-6">
+        <partial name="_RatingChart" model='("Community Ratings", Model.CommunityRatingCounts)' />
+    </div>
+</div>
