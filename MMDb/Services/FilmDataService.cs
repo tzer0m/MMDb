@@ -49,7 +49,7 @@ public class FilmDataService(MMDbContext db, TMDbClient tmdb, OMDbClient omdb)
     }
 
     /// <summary>
-    /// Refreshes a film's IMDb, Rotten Tomatoes and Metacritic ratings from OMDb.
+    /// Refreshes a film's IMDb, Rotten Tomatoes and Metacritic ratings from OMDb, and its year from IMDb.
     /// </summary>
     /// <param name="film">The film to update.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -60,6 +60,7 @@ public class FilmDataService(MMDbContext db, TMDbClient tmdb, OMDbClient omdb)
             OMDbMovie? movie = await omdb.GetByImdbIdAsync(film.IMDbId, cancellationToken);
             if (movie is not null)
             {
+                film.Year = movie.YearValue ?? film.Year;
                 film.IMDbRating = movie.ImdbRatingValue;
                 film.IMDbVotes = movie.ImdbVotesValue;
                 film.RottenTomatoes = movie.RottenTomatoesValue;

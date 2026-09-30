@@ -13,6 +13,11 @@ public class OMDbMovie
     public string? ImdbId { get; set; }
 
     /// <summary>
+    /// The release year as text, e.g. 1986 or 2019–2020.
+    /// </summary>
+    public string? Year { get; set; }
+
+    /// <summary>
     /// The IMDb rating as text, e.g. 8.3, or N/A.
     /// </summary>
     public string? ImdbRating { get; set; }
@@ -46,6 +51,11 @@ public class OMDbMovie
     /// Whether the movie was found.
     /// </summary>
     public bool Found => string.Equals(Response, "True", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The release year, taken from the first four characters of the year text.
+    /// </summary>
+    public int? YearValue => Year is { Length: >= 4 } && int.TryParse(Year[..4], NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) ? value : null;
 
     /// <summary>
     /// The IMDb rating out of 10.
