@@ -24,7 +24,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, IOpt
     public Person Person { get; set; } = null!;
 
     /// <summary>
-    /// Their films I have rated, highest rated first.
+    /// Their films I have rated, oldest first.
     /// </summary>
     public List<Film> Films { get; set; } = [];
 
@@ -113,7 +113,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, IOpt
         }
         Person = person;
         List<FilmCredit> credits = await db.FilmCredits.AsNoTracking().Include(x => x.Film).Where(x => x.PersonId == id).ToListAsync(cancellationToken);
-        Films = [.. credits.Select(x => x.Film).DistinctBy(x => x.FilmId).OrderByDescending(x => x.Rating).ThenBy(x => x.Title)];
+        Films = [.. credits.Select(x => x.Film).DistinctBy(x => x.FilmId).OrderBy(x => x.Year ?? int.MaxValue).ThenBy(x => x.Title)];
         Roles = credits.GroupBy(x => x.FilmId).ToDictionary(x => x.Key, x => string.Join(", ", x.Select(c => c.Role).Distinct().Order()));
         return Page();
     }
