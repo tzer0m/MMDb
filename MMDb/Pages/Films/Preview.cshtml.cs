@@ -13,10 +13,11 @@ namespace MMDb.Pages.Films;
 /// </summary>
 /// <param name="db">The database context.</param>
 /// <param name="filmData">The film data service.</param>
+/// <param name="omdbCache">The cached OMDb ratings.</param>
 /// <param name="filmPeople">The film people service.</param>
 /// <param name="jellyfin">The Jellyfin client.</param>
 /// <param name="logger">The logger.</param>
-public partial class PreviewModel(MMDbContext db, FilmDataService filmData, FilmPeopleService filmPeople, JellyfinClient jellyfin, ILogger<PreviewModel> logger) : PageModel
+public partial class PreviewModel(MMDbContext db, FilmDataService filmData, OMDbCacheService omdbCache, FilmPeopleService filmPeople, JellyfinClient jellyfin, ILogger<PreviewModel> logger) : PageModel
 {
     /// <summary>
     /// The TMDb ID of the film being previewed.
@@ -90,7 +91,7 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, Film
             ViewData["ShowSwagBagger"] = await SwagBaggerButton.ShouldShowAsync(User, jellyfin, Film, cancellationToken);
             return Page();
         }
-        Film? film = await BuildFilmAsync(cancellationToken);
+        Film? film = await BuildFilmAsync(true, cancellationToken);
         if (film is null)
         {
             return NotFound();
@@ -109,7 +110,7 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, Film
     /// <param name="cancellationToken">The cancellation token.</param>
     private async Task<bool> LoadPreviewAsync(CancellationToken cancellationToken)
     {
-        Film? film = await BuildFilmAsync(cancellationToken);
+        Film? film = await BuildFilmAsync(false, cancellationToken);
         if (film is null)
         {
             return false;
@@ -120,23 +121,33 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, Film
     }
 
     /// <summary>
-    /// Builds an unsaved film from TMDb details and OMDb ratings, returning null if TMDb has no such film.
+    /// Builds an unsaved film from TMDb details and OMDb ratings, returning null if TMDb has no such film; previews use cached ratings, while adding fetches fresh ones and falls back to the cache if OMDb fails.
     /// </summary>
+    /// <param name="fresh">Whether to fetch fresh ratings from OMDb rather than using the cache.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task<Film?> BuildFilmAsync(CancellationToken cancellationToken)
+    private async Task<Film?> BuildFilmAsync(bool fresh, CancellationToken cancellationToken)
     {
         Film film = new();
         if (!await filmData.ApplyTMDbAsync(film, TMDbId, cancellationToken))
         {
             return null;
         }
-        try
+        if (fresh)
         {
-            await filmData.RefreshRatingsAsync(film, cancellationToken);
+            try
+            {
+                await filmData.RefreshRatingsAsync(film, cancellationToken);
+                return film;
+            }
+            catch (HttpRequestException ex)
+            {
+                LogRatingsFailed(logger, ex, film.Title);
+            }
         }
-        catch (HttpRequestException ex)
+        if (!string.IsNullOrWhiteSpace(film.IMDbId))
         {
-            LogRatingsFailed(logger, ex, film.Title);
+            OMDbCacheEntry? entry = await omdbCache.GetAsync(film.IMDbId, cancellationToken);
+            entry?.ApplyTo(film);
         }
         return film;
     }
@@ -174,7 +185,7 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, Film
     /// <param name="logger">The logger.</param>
     /// <param name="exception">The error.</param>
     /// <param name="title">The film title.</param>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not fetch OMDb ratings for {Title}; the refresh job will retry once it is added.")]
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not fetch OMDb ratings for {Title}; using cached ratings, and the refresh job will retry once it is added.")]
     private static partial void LogRatingsFailed(ILogger logger, Exception exception, string title);
 
     /// <summary>

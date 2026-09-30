@@ -14,4 +14,9 @@ public class OMDbOptions
     /// The OMDb API key.
     /// </summary>
     public string ApiKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// How long cached OMDb ratings are used by searches and previews before being fetched again.
+    /// </summary>
+    public TimeSpan CacheDuration { get; set; } = TimeSpan.FromDays(30);
 }

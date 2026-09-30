@@ -44,13 +44,9 @@
                 <div class="small text-muted text-truncate">@result.Overview</div>
             </div>
             <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
-                @if (isRated && rated!.CommunityRating is double communityRating)
+                @if (Model.CommunityRatings.TryGetValue(result.Id, out double communityRating))
                 {
-                    <span class="badge fs-6 text-black" style="@RatingColour.StyleForRating(communityRating)" title="Community Rating">@communityRating.ToString("0.0")</span>
-                }
-                else if (result.VoteCount > 0)
-                {
-                    <span class="badge fs-6 text-black" style="@RatingColour.StyleForRating(result.VoteAverage, 0, 10)" title="TMDb Rating">@result.VoteAverage.ToString("0.0")</span>
+                    <span class="badge fs-6 text-black" style="@RatingColour.StyleForRating(communityRating)" title="@Model.RatingSources[result.Id]">@communityRating.ToString("0.0")</span>
                 }
             </div>
         </a>

@@ -25,6 +25,11 @@ public class MMDbContext(DbContextOptions<MMDbContext> options) : DbContext(opti
     public DbSet<FilmCredit> FilmCredits => Set<FilmCredit>();
 
     /// <summary>
+    /// Cached OMDb ratings for searches and previews.
+    /// </summary>
+    public DbSet<OMDbCacheEntry> OMDbCache => Set<OMDbCacheEntry>();
+
+    /// <summary>
     /// Configures the entity model.
     /// </summary>
     /// <param name="modelBuilder">The model builder.</param>
@@ -44,5 +49,7 @@ public class MMDbContext(DbContextOptions<MMDbContext> options) : DbContext(opti
         modelBuilder.Entity<FilmCredit>().HasOne(x => x.Film).WithMany(x => x.Credits).HasForeignKey(x => x.FilmId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<FilmCredit>().HasOne(x => x.Person).WithMany(x => x.Credits).HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<FilmCredit>().HasIndex(x => new { x.PersonId, x.Role });
+        modelBuilder.Entity<OMDbCacheEntry>().HasKey(x => x.IMDbId);
+        modelBuilder.Entity<OMDbCacheEntry>().Property(x => x.IMDbId).HasMaxLength(20);
     }
 }

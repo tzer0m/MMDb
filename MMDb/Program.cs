@@ -16,11 +16,13 @@ builder.Services.Configure<JellyfinOptions>(builder.Configuration.GetSection("Je
 builder.Services.Configure<ExternalLinkOptions>(builder.Configuration.GetSection("ExternalLinks"));
 builder.Services.Configure<RatingsRefreshOptions>(builder.Configuration.GetSection("RatingsRefresh"));
 builder.Services.Configure<PeopleOptions>(builder.Configuration.GetSection("People"));
+builder.Services.Configure<SearchOptions>(builder.Configuration.GetSection("Search"));
 builder.Services.AddHttpClient<TMDbClient>();
 builder.Services.AddHttpClient<OMDbClient>();
 builder.Services.AddHttpClient<JellyfinClient>();
 builder.Services.AddScoped<FilmDataService>();
 builder.Services.AddScoped<FilmPeopleService>();
+builder.Services.AddScoped<OMDbCacheService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddHostedService<RatingsRefreshService>();
 builder.Services.AddHealthChecks().AddDbContextCheck<MMDbContext>();
