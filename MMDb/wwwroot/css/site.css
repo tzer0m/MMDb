@@ -27,3 +27,56 @@
   font-weight: 700;
   font-size: 1.5rem;
 }
+
+/* Film and person headers: poster beside the header, with the details below it on phones and beside it on wider screens. */
+.detail-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  grid-template-areas: "poster header" "body body";
+  align-items: start;
+}
+
+.detail-poster {
+  grid-area: poster;
+}
+
+.detail-header {
+  grid-area: header;
+}
+
+.detail-body {
+  grid-area: body;
+}
+
+@media (min-width: 768px) {
+  .detail-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 5fr);
+    grid-template-areas: "poster header" "poster body";
+    grid-template-rows: auto 1fr;
+  }
+}
+
+/* Smaller text, badges and posters on phones. */
+@media (max-width: 767.98px) {
+  .detail-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .rating-lg {
+    font-size: 1.25rem !important;
+  }
+
+  .film-table {
+    font-size: 1rem !important;
+  }
+
+  .film-table .badge {
+    font-size: 0.875rem !important;
+  }
+
+  .film-table img {
+    width: 32px;
+    height: 48px;
+  }
+}

@@ -29,7 +29,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, IOpt
     public List<Film> Films { get; set; } = [];
 
     /// <summary>
-    /// Their role on each film, keyed by film ID, e.g. Director or Director, Cast.
+    /// Their role on each film, keyed by film ID: D for director, C for cast, or D, C for both.
     /// </summary>
     public Dictionary<int, string> Roles { get; set; } = [];
 
@@ -114,7 +114,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, IOpt
         Person = person;
         List<FilmCredit> credits = await db.FilmCredits.AsNoTracking().Include(x => x.Film).Where(x => x.PersonId == id).ToListAsync(cancellationToken);
         Films = [.. credits.Select(x => x.Film).DistinctBy(x => x.FilmId).OrderBy(x => x.Year ?? int.MaxValue).ThenBy(x => x.Title)];
-        Roles = credits.GroupBy(x => x.FilmId).ToDictionary(x => x.Key, x => string.Join(", ", x.Select(c => c.Role).Distinct().Order()));
+        Roles = credits.GroupBy(x => x.FilmId).ToDictionary(x => x.Key, x => string.Join(", ", x.Select(c => c.Role).Distinct().Order().Select(r => r == CreditRole.Director ? "D" : "C")));
         return Page();
     }
 

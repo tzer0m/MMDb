@@ -7,7 +7,7 @@
     ViewData["Title"] = "Films";
 }
 
-<div class="row g-3 mb-3">
+<div class="row g-3 mb-3 d-none d-md-flex">
     <div class="col-md-6">
         @{ RatingChart("My Ratings", Model.MyRatingCounts); }
     </div>
@@ -26,7 +26,7 @@
     <div id="film-paging"></div>
 </div>
 
-<table id="films" class="table table-hover align-middle w-100 fs-5">
+<table id="films" class="table table-hover align-middle w-100 fs-5 film-table">
     <thead>
         <tr>
             <th></th>
