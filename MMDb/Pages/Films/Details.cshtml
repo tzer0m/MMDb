@@ -81,27 +81,24 @@
 
 @if (Model.Director is not null || Model.Cast.Count > 0)
 {
-    <h2 class="h5 mt-4 d-md-none">Director &amp; Cast</h2>
-    <div class="row row-cols-3 row-cols-md-6 g-3 mt-md-4">
+    <div class="row row-cols-2 row-cols-md-6 g-3 mt-4">
         @if (Model.Director is not null)
         {
             <div class="col">
-                <h2 class="h5 d-none d-md-block">Director</h2>
-                @{ await PersonColumn(Model.Director); }
+                @{ await PersonColumn(Model.Director, "Director"); }
             </div>
         }
         @for (int index = 0; index < Model.Cast.Count; index++)
         {
             <div class="col">
-                <h2 class="h5 d-none d-md-block @(index == 0 ? "" : "invisible")">Cast</h2>
-                @{ await PersonColumn(Model.Cast[index]); }
+                @{ await PersonColumn(Model.Cast[index], Model.Characters.GetValueOrDefault(Model.Cast[index].PersonId)); }
             </div>
         }
     </div>
 }
 
 @{
-    async Task PersonColumn(Person person)
+    async Task PersonColumn(Person person, string? role)
     {
         <a asp-page="/People/Details" asp-route-id="@person.PersonId" class="d-block text-decoration-none mb-2">
             <div class="ratio rounded overflow-hidden bg-body-secondary mb-2" style="--bs-aspect-ratio: 150%">
@@ -111,6 +108,10 @@
                 }
             </div>
             <div class="fw-semibold">@person.Name</div>
+            @if (role is not null)
+            {
+                <div class="small text-muted">@role</div>
+            }
         </a>
         <div class="list-group list-group-flush small">
             @foreach (Film film in Model.OtherFilms[person.PersonId])

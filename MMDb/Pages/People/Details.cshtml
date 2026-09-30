@@ -49,7 +49,7 @@
     <div class="detail-body">
         @if (!string.IsNullOrWhiteSpace(Model.BiographySummary))
         {
-            <p style="white-space: pre-line">@Model.BiographySummary</p>
+            <p class="d-none d-md-block" style="white-space: pre-line">@Model.BiographySummary</p>
         }
     </div>
 </div>
@@ -57,13 +57,13 @@
 <table id="person-films" class="table table-hover align-middle w-100 fs-5 film-table">
     <thead>
         <tr>
-            <th></th>
-            <th>Title</th>
-            <th>Year</th>
-            <th class="text-center" title="Role: D for director, C for cast">Role</th>
-            <th class="text-center" title="My Rating">MR</th>
-            <th class="text-center" title="Community Rating">CR</th>
-            <th class="d-none d-sm-table-cell text-nowrap">Watched</th>
+            <th class="d-none d-md-table-cell"></th>
+            <th class="d-none d-md-table-cell">Title</th>
+            <th class="d-none d-md-table-cell">Year</th>
+            <th class="d-none d-md-table-cell">Role</th>
+            <th class="d-none d-md-table-cell text-center" title="My Rating">MR</th>
+            <th class="d-none d-md-table-cell text-center" title="Community Rating">CR</th>
+            <th class="d-none d-md-table-cell text-nowrap">Watched</th>
         </tr>
     </thead>
     <tbody>
@@ -76,17 +76,27 @@
                         <img src="@(imageBaseUrl)w92@(film.PosterPath)" alt="" class="rounded" width="43" height="64" loading="lazy" />
                     }
                 </td>
-                <td class="text-truncate" style="max-width: 0; width: 100%" title="@film.Title">@film.Title</td>
-                <td>@film.Year</td>
-                <td class="text-center text-nowrap">@Model.Roles[film.FilmId]</td>
-                <td class="text-center"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.Rating)">@film.Rating</span></td>
-                <td class="text-center">
+                <td style="max-width: 0; width: 100%">
+                    <div class="text-truncate" title="@film.Title">@film.Title</div>
+                    <div class="d-flex d-md-none align-items-center gap-2 mt-1">
+                        <span class="text-truncate text-muted small" title="@Model.Roles[film.FilmId]">@(film.Year is int year ? $"{year} \u00b7 " : "")@Model.Roles[film.FilmId]</span>
+                        <span class="badge text-black ms-auto" style="@RatingColour.StyleForRating(film.Rating)" title="My Rating">@film.Rating</span>
+                        @if (film.CommunityRating is double mobileCommunityRating)
+                        {
+                            <span class="badge text-black" style="@RatingColour.StyleForRating(mobileCommunityRating)" title="Community Rating">@mobileCommunityRating.ToString("0.0")</span>
+                        }
+                    </div>
+                </td>
+                <td class="d-none d-md-table-cell">@film.Year</td>
+                <td class="d-none d-md-table-cell text-truncate" style="max-width: 16rem" title="@Model.Roles[film.FilmId]">@Model.Roles[film.FilmId]</td>
+                <td class="d-none d-md-table-cell text-center"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.Rating)">@film.Rating</span></td>
+                <td class="d-none d-md-table-cell text-center">
                     @if (film.CommunityRating is double communityRating)
                     {
                         <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(communityRating)">@communityRating.ToString("0.0")</span>
                     }
                 </td>
-                <td class="d-none d-sm-table-cell text-nowrap">@film.WatchedOn?.ToString("d MMM yyyy")</td>
+                <td class="d-none d-md-table-cell text-nowrap">@film.WatchedOn?.ToString("d MMM yyyy")</td>
             </tr>
         }
     </tbody>

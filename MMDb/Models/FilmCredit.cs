@@ -34,4 +34,9 @@ public class FilmCredit
     /// The billing order, lowest first.
     /// </summary>
     public int Order { get; set; }
+
+    /// <summary>
+    /// The character played, for cast credits.
+    /// </summary>
+    public string? Character { get; set; }
 }

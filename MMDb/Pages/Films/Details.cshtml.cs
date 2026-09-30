@@ -28,6 +28,11 @@ public class DetailsModel(MMDbContext db) : PageModel
     public List<Person> Cast { get; set; } = [];
 
     /// <summary>
+    /// The character each cast member played, keyed by person ID.
+    /// </summary>
+    public Dictionary<int, string> Characters { get; set; } = [];
+
+    /// <summary>
     /// My other rated films for each person, keyed by person ID, highest rated first.
     /// </summary>
     public Dictionary<int, List<Film>> OtherFilms { get; set; } = [];
@@ -47,6 +52,7 @@ public class DetailsModel(MMDbContext db) : PageModel
         Film = film;
         Director = film.Credits.Where(x => x.Role == CreditRole.Director).OrderBy(x => x.Order).Select(x => x.Person).FirstOrDefault();
         Cast = [.. film.Credits.Where(x => x.Role == CreditRole.Cast).OrderBy(x => x.Order).Take(5).Select(x => x.Person)];
+        Characters = film.Credits.Where(x => x.Role == CreditRole.Cast && x.Character != null).GroupBy(x => x.PersonId).ToDictionary(x => x.Key, x => x.First().Character!);
         List<int> personIds = [.. Cast.Select(x => x.PersonId)];
         if (Director is not null)
         {
