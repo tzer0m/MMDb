@@ -10,7 +10,7 @@
     string? imdbUrl = Model.IMDbId is string imdbId ? string.Format(ExternalLinks.Value.IMDb, imdbId) : null;
     string rottenTomatoesUrl = string.Format(ExternalLinks.Value.RottenTomatoes, encodedTitle);
     string metacriticUrl = string.Format(ExternalLinks.Value.Metacritic, encodedTitle);
-    string swagBaggerUrl = string.Format(ExternalLinks.Value.SwagBagger, Uri.EscapeDataString(Model.Year is int searchYear ? $"{Model.Title} {searchYear}" : Model.Title), Uri.EscapeDataString(Model.Title), Model.Year?.ToString() ?? string.Empty);
+    string swagBaggerUrl = string.Format(ExternalLinks.Value.SwagBagger, Uri.EscapeDataString(SearchText.Simplify(Model.Year is int searchYear ? $"{Model.Title} {searchYear}" : Model.Title)), Uri.EscapeDataString(Model.Title), Model.Year?.ToString() ?? string.Empty);
 }
 
 <div class="detail-layout">
