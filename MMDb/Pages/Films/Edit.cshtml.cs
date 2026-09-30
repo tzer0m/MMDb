@@ -14,7 +14,7 @@ namespace MMDb.Pages.Films;
 /// <param name="filmData">The film data service.</param>
 /// <param name="jellyfin">The Jellyfin client.</param>
 /// <param name="logger">The logger.</param>
-public class EditModel(MMDbContext db, FilmDataService filmData, JellyfinClient jellyfin, ILogger<EditModel> logger) : PageModel
+public partial class EditModel(MMDbContext db, FilmDataService filmData, JellyfinClient jellyfin, ILogger<EditModel> logger) : PageModel
 {
     /// <summary>
     /// The ID of the film being edited.
@@ -94,7 +94,7 @@ public class EditModel(MMDbContext db, FilmDataService filmData, JellyfinClient 
         }
         catch (HttpRequestException ex)
         {
-            logger.LogWarning(ex, "Could not refresh data for {Title}.", film.Title);
+            LogRefreshFailed(logger, ex, film.Title);
             TempData["Message"] = $"Refreshing failed: {ex.Message}";
         }
         return RedirectToPage("/Films/Details", new { id = film.FilmId });
@@ -123,8 +123,26 @@ public class EditModel(MMDbContext db, FilmDataService filmData, JellyfinClient 
         }
         catch (HttpRequestException ex)
         {
-            logger.LogWarning(ex, "Could not push the rating for {Title} to Jellyfin.", film.Title);
+            LogPushFailed(logger, ex, film.Title);
             return $"Saved, but pushing the rating to Jellyfin failed: {ex.Message}";
         }
     }
+
+    /// <summary>
+    /// Logs that a film's data could not be refreshed.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    /// <param name="title">The film title.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not refresh data for {Title}.")]
+    private static partial void LogRefreshFailed(ILogger logger, Exception exception, string title);
+
+    /// <summary>
+    /// Logs that a rating could not be pushed to Jellyfin.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    /// <param name="title">The film title.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not push the rating for {Title} to Jellyfin.")]
+    private static partial void LogPushFailed(ILogger logger, Exception exception, string title);
 }

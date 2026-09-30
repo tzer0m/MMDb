@@ -41,11 +41,6 @@ public class TMDbMovie
     public string? Overview { get; set; }
 
     /// <summary>
-    /// The movie's genres.
-    /// </summary>
-    public List<TMDbGenre> Genres { get; set; } = [];
-
-    /// <summary>
     /// The average TMDb user rating, out of 10.
     /// </summary>
     public double VoteAverage { get; set; }

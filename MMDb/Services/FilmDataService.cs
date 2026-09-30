@@ -38,8 +38,6 @@ public class FilmDataService(MMDbContext db, TMDbClient tmdb, OMDbClient omdb)
         film.RuntimeMinutes = movie.Runtime is > 0 ? movie.Runtime : null;
         film.Overview = string.IsNullOrWhiteSpace(movie.Overview) ? null : movie.Overview;
         film.Tagline = string.IsNullOrWhiteSpace(movie.Tagline) ? null : movie.Tagline;
-        film.Genres = [.. movie.Genres.Select(x => x.Name)];
-        film.Cast = [.. cast.OrderBy(x => x.Order).Take(10).Select(x => x.Name)];
         film.PosterPath = movie.PosterPath;
         film.BackdropPath = movie.BackdropPath;
         film.TMDbRating = movie.VoteCount > 0 ? Math.Round(movie.VoteAverage, 1) : null;

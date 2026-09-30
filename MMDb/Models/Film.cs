@@ -53,16 +53,6 @@ public class Film
     public string? Tagline { get; set; }
 
     /// <summary>
-    /// The film's genres.
-    /// </summary>
-    public List<string> Genres { get; set; } = [];
-
-    /// <summary>
-    /// The top-billed cast, in billing order.
-    /// </summary>
-    public List<string> Cast { get; set; } = [];
-
-    /// <summary>
     /// The TMDb poster image path.
     /// </summary>
     public string? PosterPath { get; set; }

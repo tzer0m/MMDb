@@ -16,7 +16,7 @@ namespace MMDb.Pages.Films;
 /// <param name="filmData">The film data service.</param>
 /// <param name="jellyfin">The Jellyfin client.</param>
 /// <param name="logger">The logger.</param>
-public class AddModel(MMDbContext db, TMDbClient tmdb, FilmDataService filmData, JellyfinClient jellyfin, ILogger<AddModel> logger) : PageModel
+public partial class AddModel(MMDbContext db, TMDbClient tmdb, FilmDataService filmData, JellyfinClient jellyfin, ILogger<AddModel> logger) : PageModel
 {
     /// <summary>
     /// The title to search TMDb for.
@@ -121,7 +121,7 @@ public class AddModel(MMDbContext db, TMDbClient tmdb, FilmDataService filmData,
         }
         catch (HttpRequestException ex)
         {
-            logger.LogWarning(ex, "Could not fetch OMDb ratings for {Title}; the refresh job will retry.", film.Title);
+            LogRatingsFailed(logger, ex, film.Title);
         }
         db.Films.Add(film);
         await db.SaveChangesAsync(cancellationToken);
@@ -142,7 +142,7 @@ public class AddModel(MMDbContext db, TMDbClient tmdb, FilmDataService filmData,
         }
         catch (HttpRequestException ex)
         {
-            logger.LogWarning(ex, "Could not load TMDb details for {TMDbId}.", tmdbId);
+            LogDetailsFailed(logger, ex, tmdbId);
             return null;
         }
     }
@@ -170,8 +170,35 @@ public class AddModel(MMDbContext db, TMDbClient tmdb, FilmDataService filmData,
         }
         catch (HttpRequestException ex)
         {
-            logger.LogWarning(ex, "Could not push the rating for {Title} to Jellyfin.", film.Title);
+            LogPushFailed(logger, ex, film.Title);
             return $"Saved, but pushing the rating to Jellyfin failed: {ex.Message}";
         }
     }
+
+    /// <summary>
+    /// Logs that OMDb ratings could not be fetched for a new film.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    /// <param name="title">The film title.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not fetch OMDb ratings for {Title}; the refresh job will retry.")]
+    private static partial void LogRatingsFailed(ILogger logger, Exception exception, string title);
+
+    /// <summary>
+    /// Logs that TMDb details could not be loaded for a search result.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    /// <param name="tmdbId">The TMDb movie ID.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not load TMDb details for {TMDbId}.")]
+    private static partial void LogDetailsFailed(ILogger logger, Exception exception, int tmdbId);
+
+    /// <summary>
+    /// Logs that a rating could not be pushed to Jellyfin.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    /// <param name="title">The film title.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not push the rating for {Title} to Jellyfin.")]
+    private static partial void LogPushFailed(ILogger logger, Exception exception, string title);
 }

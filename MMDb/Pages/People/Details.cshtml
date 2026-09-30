@@ -92,10 +92,13 @@
     </tbody>
 </table>
 
-@section Scripts {
+@section Styles {
     <style>
         #person-films tbody tr[data-href] { cursor: pointer; }
     </style>
+}
+
+@section Scripts {
     <script>
         document.querySelector('#person-films tbody').addEventListener('click', event => {
             const row = event.target.closest('tr[data-href]');
