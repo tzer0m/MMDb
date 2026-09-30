@@ -128,6 +128,35 @@ public class Film
     public List<FilmCredit> Credits { get; set; } = [];
 
     /// <summary>
+    /// The average of the TMDb, IMDb, Rotten Tomatoes and Metacritic ratings on a 10-point scale, using whichever are available.
+    /// </summary>
+    [NotMapped]
+    public double? CommunityRating
+    {
+        get
+        {
+            List<double> ratings = [];
+            if (TMDbRating is double tmdb)
+            {
+                ratings.Add(tmdb);
+            }
+            if (IMDbRating is double imdb)
+            {
+                ratings.Add(imdb);
+            }
+            if (RottenTomatoes is int rottenTomatoes)
+            {
+                ratings.Add(rottenTomatoes / 10.0);
+            }
+            if (Metacritic is int metacritic)
+            {
+                ratings.Add(metacritic / 10.0);
+            }
+            return ratings.Count == 0 ? null : Math.Round(ratings.Average(), 1);
+        }
+    }
+
+    /// <summary>
     /// The runtime formatted as hours and minutes.
     /// </summary>
     [NotMapped]

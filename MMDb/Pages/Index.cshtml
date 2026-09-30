@@ -43,7 +43,12 @@
                 <td>@film.Year</td>
                 <td class="d-none d-md-table-cell text-nowrap">@film.Director</td>
                 <td class="text-center" data-order="@film.Rating"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.Rating)">@film.Rating</span></td>
-                <td class="text-center"></td>
+                <td class="text-center" data-order="@(film.CommunityRating ?? -1)">
+                    @if (film.CommunityRating is double communityRating)
+                    {
+                        <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(communityRating)">@communityRating.ToString("0.0")</span>
+                    }
+                </td>
                 <td class="d-none d-sm-table-cell text-nowrap" data-order="@(film.WatchedOn?.ToString("yyyy-MM-dd") ?? "0000-00-00")">@film.WatchedOn?.ToString("d MMM yyyy")</td>
             </tr>
         }
@@ -63,7 +68,7 @@
             order: [[6, 'desc']],
             autoWidth: false,
             pageLength: 100,
-            columnDefs: [{ targets: [0, 5], orderable: false }],
+            columnDefs: [{ targets: 0, orderable: false }],
             language: { emptyTable: 'No films yet.', zeroRecords: 'No matching films.', info: '_START_ to _END_ of _TOTAL_', infoEmpty: '0 to 0 of 0', infoFiltered: '(_MAX_)' },
             layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' }
         });
