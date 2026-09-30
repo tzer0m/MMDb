@@ -116,6 +116,8 @@
             emptyCell.replaceChildren(link);
         });
         searchInput.addEventListener('input', () => films.search(searchInput.value).draw());
+        // Re-apply a search the browser restores when navigating back.
+        window.addEventListener('pageshow', () => films.search(searchInput.value).draw());
         document.getElementById('film-search').addEventListener('submit', event => {
             event.preventDefault();
             films.search(searchInput.value).draw();

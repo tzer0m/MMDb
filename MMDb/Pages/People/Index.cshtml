@@ -1,0 +1,132 @@
+﻿@page "/talent"
+@model MMDb.Pages.People.IndexModel
+@using Microsoft.Extensions.Options
+@using MMDb.Options
+@inject IOptions<TMDbOptions> TMDbOptions
+@{
+    ViewData["Title"] = "Talent";
+    string imageBaseUrl = TMDbOptions.Value.ImageBaseUrl;
+}
+
+<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+    <form id="talent-search" class="input-group flex-grow-1 w-auto">
+        <input type="search" id="talent-search-input" class="form-control" placeholder="Search Talent" aria-label="Search Talent" />
+        <select id="talent-role" class="form-select flex-grow-0 w-auto" aria-label="Filter by Role">
+            <option value="">All</option>
+            <option value="D">Directors</option>
+            <option value="A">Actors</option>
+        </select>
+        <select id="talent-min-films" class="form-select flex-grow-0 w-auto" aria-label="Minimum Films">
+            <option value="1">Any Films</option>
+            <option value="2">2+ Films</option>
+            <option value="3">3+ Films</option>
+            <option value="5">5+ Films</option>
+            <option value="10">10+ Films</option>
+        </select>
+        <button type="submit" class="btn btn-outline-secondary d-flex align-items-center" title="Search" aria-label="Search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" /></svg>
+        </button>
+    </form>
+    <div id="talent-paging"></div>
+</div>
+
+<table id="talent" class="table table-hover align-middle w-100 fs-5 film-table">
+    <thead>
+        <tr>
+            <th class="d-none d-md-table-cell"></th>
+            <th class="d-none d-md-table-cell">Name</th>
+            <th class="d-none d-md-table-cell text-center">Films</th>
+            <th class="d-none d-md-table-cell text-center" title="D: director, A: actor">Role</th>
+            <th class="d-none d-md-table-cell text-center" title="Average My Rating">MR</th>
+            <th class="d-none d-md-table-cell text-center" title="Average Community Rating">CR</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (TalentSummary person in Model.Talent)
+        {
+            <tr data-href="@Url.Page("/People/Details", new { id = person.PersonId })">
+                <td class="p-1">
+                    @if (person.ProfilePath is not null)
+                    {
+                        <img src="@(imageBaseUrl)w92@(person.ProfilePath)" alt="" class="rounded object-fit-cover" width="43" height="64" loading="lazy" />
+                    }
+                </td>
+                <td style="max-width: 0; width: 100%" data-order="@person.Name">
+                    <div class="text-truncate" title="@person.Name">@person.Name</div>
+                    <div class="d-flex d-md-none align-items-center gap-2 mt-1">
+                        <span class="text-truncate text-muted small">@person.FilmCount @(person.FilmCount == 1 ? "film" : "films") &middot; @person.Roles</span>
+                        <span class="badge text-black ms-auto" style="@RatingColour.StyleForRating(person.AverageMyRating)" title="Average My Rating">@person.AverageMyRating.ToString("0.0")</span>
+                        @if (person.AverageCommunityRating is double mobileCommunityRating)
+                        {
+                            <span class="badge text-black" style="@RatingColour.StyleForRating(mobileCommunityRating)" title="Average Community Rating">@mobileCommunityRating.ToString("0.0")</span>
+                        }
+                    </div>
+                </td>
+                <td class="d-none d-md-table-cell text-center">@person.FilmCount</td>
+                <td class="d-none d-md-table-cell text-center text-nowrap">@person.Roles</td>
+                <td class="d-none d-md-table-cell text-center" data-order="@person.AverageMyRating"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(person.AverageMyRating)">@person.AverageMyRating.ToString("0.0")</span></td>
+                <td class="d-none d-md-table-cell text-center" data-order="@(person.AverageCommunityRating ?? -1)">
+                    @if (person.AverageCommunityRating is double communityRating)
+                    {
+                        <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(communityRating)">@communityRating.ToString("0.0")</span>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Styles {
+    <link rel="stylesheet" href="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.css" />
+    <style>
+        #talent-paging ul.pagination { margin: 0; }
+        #talent tbody tr[data-href] { cursor: pointer; }
+    </style>
+}
+
+@section Scripts {
+    <script src="~/lib/datatables.net/dataTables.min.js"></script>
+    <script src="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.js"></script>
+    <script>
+        const minFilms = document.getElementById('talent-min-films');
+        const talent = new DataTable('#talent', {
+            order: [[2, 'desc'], [1, 'asc']],
+            autoWidth: false,
+            pageLength: 100,
+            columnDefs: [{ targets: 0, orderable: false }],
+            language: { emptyTable: 'No talent yet.', zeroRecords: 'No matching talent.', info: '_START_ to _END_ of _TOTAL_', infoEmpty: '0 to 0 of 0', infoFiltered: '(_MAX_)' },
+            layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' }
+        });
+        document.getElementById('talent-paging').append(document.querySelector('#talent_wrapper .dt-paging'));
+        document.querySelector('#talent tbody').addEventListener('click', event => {
+            const row = event.target.closest('tr[data-href]');
+            if (!row) {
+                return;
+            }
+            if (event.ctrlKey || event.metaKey) {
+                window.open(row.dataset.href, '_blank');
+            }
+            else {
+                window.location.href = row.dataset.href;
+            }
+        });
+        const roleFilter = document.getElementById('talent-role');
+        const searchInput = document.getElementById('talent-search-input');
+        // Apply every filter from the current control values, including ones the browser restores when navigating back.
+        const applyFilters = () => {
+            talent.search(searchInput.value);
+            talent.column(3).search(roleFilter.value);
+            talent.column(2).search(value => Number(value) >= Number(minFilms.value));
+            talent.draw();
+        };
+        roleFilter.addEventListener('change', applyFilters);
+        minFilms.addEventListener('change', applyFilters);
+        searchInput.addEventListener('input', applyFilters);
+        document.getElementById('talent-search').addEventListener('submit', event => {
+            event.preventDefault();
+            applyFilters();
+        });
+        window.addEventListener('pageshow', applyFilters);
+        applyFilters();
+    </script>
+}
