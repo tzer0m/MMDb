@@ -1,0 +1,22 @@
+/* Greyscale overrides for Bootstrap's blue accents. */
+[data-bs-theme=dark] {
+  --bs-link-color: #dee2e6;
+  --bs-link-color-rgb: 222, 226, 230;
+  --bs-link-hover-color: #ffffff;
+  --bs-link-hover-color-rgb: 255, 255, 255;
+  --bs-focus-ring-color: rgba(173, 181, 189, 0.25);
+}
+
+.pagination {
+  --bs-pagination-color: var(--bs-body-color);
+  --bs-pagination-hover-color: #ffffff;
+  --bs-pagination-focus-color: #ffffff;
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem rgba(173, 181, 189, 0.25);
+  --bs-pagination-active-bg: #6c757d;
+  --bs-pagination-active-border-color: #6c757d;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #adb5bd;
+  box-shadow: 0 0 0 0.25rem rgba(173, 181, 189, 0.25);
+}

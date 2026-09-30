@@ -8,7 +8,7 @@
 
 @if (TempData["Message"] is string message)
 {
-    <div class="alert alert-warning">@message</div>
+    <div class="alert alert-secondary">@message</div>
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
@@ -36,7 +36,7 @@
         </p>
     </div>
     <div class="text-end">
-        <span class="badge text-bg-warning fs-2">@Model.Film.Rating<small class="fs-6">/10</small></span>
+        <span class="badge fs-2 text-black" style="background-color: @RatingColour.ForRating(Model.Film.Rating)">@Model.Film.Rating<small class="fs-6">/10</small></span>
         @if (Model.Film.WatchedOn is DateOnly watched)
         {
             <div class="text-muted small mt-1">Watched @watched.ToString("d MMMM yyyy")</div>

@@ -44,7 +44,7 @@
             <span asp-validation-for="Input.WatchedOn" class="text-danger small"></span>
         </div>
         <div class="col-12">
-            <button type="submit" class="btn btn-primary">Add Film</button>
+            <button type="submit" class="btn btn-secondary">Add Film</button>
             <a asp-page="/Index" class="btn btn-link">Cancel</a>
         </div>
     </form>
@@ -53,7 +53,7 @@ else
 {
     <form method="get" class="d-flex gap-2 mb-4" style="max-width: 32rem">
         <input type="search" name="query" value="@Model.Query" class="form-control" placeholder="Search TMDb for a Film" autofocus />
-        <button type="submit" class="btn btn-primary">Search</button>
+        <button type="submit" class="btn btn-secondary">Search</button>
     </form>
 
     @if (!string.IsNullOrWhiteSpace(Model.Query) && Model.Results.Count == 0)
@@ -83,7 +83,7 @@ else
                 }
                 else
                 {
-                    <a asp-page="/Films/Add" asp-route-tmdbId="@result.Id" asp-route-query="@Model.Query" class="btn btn-sm btn-primary">Select</a>
+                    <a asp-page="/Films/Add" asp-route-tmdbId="@result.Id" asp-route-query="@Model.Query" class="btn btn-sm btn-secondary">Select</a>
                 }
             </div>
         }

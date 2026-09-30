@@ -1,55 +1,93 @@
 ﻿@page
 @model IndexModel
+@using Microsoft.Extensions.Options
+@using MMDb.Options
+@inject IOptions<TMDbOptions> TMDbOptions
 @{
     ViewData["Title"] = "Films";
 }
 
-<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-    <div>
-        <h1 class="h3 mb-0">Films</h1>
-        <small class="text-muted">
-            @Model.Films.Count @(Model.Films.Count == 1 ? "film" : "films")
-            @if (Model.AverageRating is double average)
-            {
-                <text>&middot; average @average.ToString("0.0")</text>
-            }
-        </small>
-    </div>
-    <form method="get" class="d-flex gap-2">
-        <input type="hidden" name="sort" value="@Model.Sort" />
-        <input type="hidden" name="desc" value="@Model.Desc.ToString().ToLowerInvariant()" />
-        <input type="search" name="search" value="@Model.Search" class="form-control" placeholder="Search Titles" />
-        <button type="submit" class="btn btn-outline-secondary">Search</button>
+<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+    <form id="film-search" class="input-group flex-grow-1 w-auto">
+        <input type="search" id="film-search-input" class="form-control" placeholder="Search Titles" aria-label="Search Titles" />
+        <button type="submit" class="btn btn-outline-secondary d-flex align-items-center" title="Search" aria-label="Search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" /></svg>
+        </button>
+        <a asp-page="/Films/Add" class="btn btn-secondary d-flex align-items-center" title="Add Film" aria-label="Add Film">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2" /></svg>
+        </a>
     </form>
+    <div id="film-paging"></div>
 </div>
 
-@if (Model.Films.Count == 0)
-{
-    <p class="text-muted">No films yet.</p>
-}
-else
-{
-    <table class="table table-hover align-middle">
-        <thead>
-            <tr>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRoute("title")">Title</a></th>
-                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRoute("year")">Year</a></th>
-                <th class="d-none d-md-table-cell">Director</th>
-                <th class="text-center"><a asp-page="/Index" asp-all-route-data="@Model.SortRoute("rating")">Rating</a></th>
-                <th class="d-none d-sm-table-cell"><a asp-page="/Index" asp-all-route-data="@Model.SortRoute("watched")">Watched</a></th>
+<table id="films" class="table table-hover align-middle w-100 fs-5">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Title</th>
+            <th>Year</th>
+            <th class="d-none d-md-table-cell text-nowrap">Director</th>
+            <th class="text-center" title="My Rating">MR</th>
+            <th class="text-center" title="Community Rating">CR</th>
+            <th class="d-none d-sm-table-cell text-nowrap">Watched</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (Film film in Model.Films)
+        {
+            <tr data-href="@Url.Page("/Films/Details", new { id = film.FilmId })">
+                <td class="p-1">
+                    @if (film.PosterPath is not null)
+                    {
+                        <img src="@(TMDbOptions.Value.ImageBaseUrl)w92@(film.PosterPath)" alt="" class="rounded" width="43" height="64" loading="lazy" />
+                    }
+                </td>
+                <td class="text-truncate" style="max-width: 0; width: 100%" title="@film.Title">@film.Title</td>
+                <td>@film.Year</td>
+                <td class="d-none d-md-table-cell text-nowrap">@film.Director</td>
+                <td class="text-center" data-order="@film.Rating"><span class="badge fs-5 text-black" style="background-color: @RatingColour.ForRating(film.Rating)">@film.Rating</span></td>
+                <td class="text-center"></td>
+                <td class="d-none d-sm-table-cell text-nowrap" data-order="@(film.WatchedOn?.ToString("yyyy-MM-dd") ?? "0000-00-00")">@film.WatchedOn?.ToString("d MMM yyyy")</td>
             </tr>
-        </thead>
-        <tbody>
-            @foreach (Film film in Model.Films)
-            {
-                <tr>
-                    <td><a asp-page="/Films/Details" asp-route-id="@film.FilmId">@film.Title</a></td>
-                    <td>@film.Year</td>
-                    <td class="d-none d-md-table-cell">@film.Director</td>
-                    <td class="text-center"><span class="badge text-bg-warning fs-6">@film.Rating</span></td>
-                    <td class="d-none d-sm-table-cell">@film.WatchedOn?.ToString("d MMM yyyy")</td>
-                </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <link rel="stylesheet" href="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.css" />
+    <style>
+        #film-paging ul.pagination { margin: 0; }
+        #films tbody tr[data-href] { cursor: pointer; }
+    </style>
+    <script src="~/lib/datatables.net/dataTables.min.js"></script>
+    <script src="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.js"></script>
+    <script>
+        const films = new DataTable('#films', {
+            order: [[6, 'desc']],
+            autoWidth: false,
+            pageLength: 100,
+            columnDefs: [{ targets: [0, 5], orderable: false }],
+            language: { emptyTable: 'No films yet.', zeroRecords: 'No matching films.' },
+            layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' }
+        });
+        document.getElementById('film-paging').append(document.querySelector('#films_wrapper .dt-paging'));
+        document.querySelector('#films tbody').addEventListener('click', event => {
+            const row = event.target.closest('tr[data-href]');
+            if (!row) {
+                return;
             }
-        </tbody>
-    </table>
+            if (event.ctrlKey || event.metaKey) {
+                window.open(row.dataset.href, '_blank');
+            }
+            else {
+                window.location.href = row.dataset.href;
+            }
+        });
+        const searchInput = document.getElementById('film-search-input');
+        searchInput.addEventListener('input', () => films.search(searchInput.value).draw());
+        document.getElementById('film-search').addEventListener('submit', event => {
+            event.preventDefault();
+            films.search(searchInput.value).draw();
+        });
+    </script>
 }
