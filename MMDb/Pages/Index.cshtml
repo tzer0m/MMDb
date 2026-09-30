@@ -96,10 +96,15 @@
         });
         const searchInput = document.getElementById('film-search-input');
         const addFilmUrl = '@Url.Page("/Films/Add")';
+        const canAdd = @(User.Identity?.IsAuthenticated == true ? "true" : "false");
         films.on('draw', () => {
             const query = searchInput.value.trim();
             const emptyCell = document.querySelector('#films tbody td.dt-empty');
             if (!emptyCell || !query) {
+                return;
+            }
+            if (!canAdd) {
+                emptyCell.textContent = 'Movie not found.';
                 return;
             }
             const link = document.createElement('a');
