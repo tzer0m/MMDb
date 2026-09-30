@@ -1,10 +1,55 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Films";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-0">Films</h1>
+        <small class="text-muted">
+            @Model.Films.Count @(Model.Films.Count == 1 ? "film" : "films")
+            @if (Model.AverageRating is double average)
+            {
+                <text>&middot; average @average.ToString("0.0")</text>
+            }
+        </small>
+    </div>
+    <form method="get" class="d-flex gap-2">
+        <input type="hidden" name="sort" value="@Model.Sort" />
+        <input type="hidden" name="desc" value="@Model.Desc.ToString().ToLowerInvariant()" />
+        <input type="search" name="search" value="@Model.Search" class="form-control" placeholder="Search titles" />
+        <button type="submit" class="btn btn-outline-secondary">Search</button>
+    </form>
 </div>
+
+@if (Model.Films.Count == 0)
+{
+    <p class="text-muted">No films yet.</p>
+}
+else
+{
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRoute("title")">Title</a></th>
+                <th><a asp-page="/Index" asp-all-route-data="@Model.SortRoute("year")">Year</a></th>
+                <th class="d-none d-md-table-cell">Director</th>
+                <th class="text-center"><a asp-page="/Index" asp-all-route-data="@Model.SortRoute("rating")">Rating</a></th>
+                <th class="d-none d-sm-table-cell"><a asp-page="/Index" asp-all-route-data="@Model.SortRoute("watched")">Watched</a></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (Film film in Model.Films)
+            {
+                <tr>
+                    <td><a asp-page="/Films/Details" asp-route-id="@film.FilmId">@film.Title</a></td>
+                    <td>@film.Year</td>
+                    <td class="d-none d-md-table-cell">@film.Director</td>
+                    <td class="text-center"><span class="badge text-bg-warning fs-6">@film.Rating</span></td>
+                    <td class="d-none d-sm-table-cell">@film.WatchedOn?.ToString("d MMM yyyy")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
