@@ -29,4 +29,9 @@ public class ExternalLinkOptions
     /// The Metacritic search page, with {0} as the URL-encoded title.
     /// </summary>
     public string Metacritic { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The site's GitHub repository.
+    /// </summary>
+    public string GitHub { get; set; } = string.Empty;
 }

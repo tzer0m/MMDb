@@ -1,0 +1,20 @@
+﻿@page "/about"
+@using Microsoft.Extensions.Options
+@using MMDb.Options
+@inject IOptions<ExternalLinkOptions> ExternalLinks
+@{
+    ViewData["Title"] = "About";
+}
+
+<h1 class="h3 mb-3">About</h1>
+<p>MMDb is my personal film ratings site. MR is my own rating out of 10, and CR is the community rating: the average of the IMDb, TMDb, Rotten Tomatoes and Metacritic ratings on a 10-point scale. The source code is on <a href="@ExternalLinks.Value.GitHub" target="_blank" rel="noopener">GitHub</a>.</p>
+
+<h2 class="h5 mt-4">Credits</h2>
+<ul class="list-unstyled">
+    <li class="d-flex align-items-center gap-3 mb-3">
+        <img src="/img/tmdb.svg" alt="TMDb" height="24" />
+        <span>Film and person data from <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDb</a>. This product uses the TMDb API but is not endorsed or certified by TMDb.</span>
+    </li>
+    <li class="mb-3">Ratings from <a href="https://www.omdbapi.com/" target="_blank" rel="noopener">OMDb</a>.</li>
+    <li class="mb-3">Logo: <a href="https://www.flaticon.com/free-icons/achievement" title="achievement icons" target="_blank" rel="noopener">Achievement icons created by Uniconlabs - Flaticon</a></li>
+</ul>
