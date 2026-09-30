@@ -3,8 +3,15 @@
 @using Microsoft.Extensions.Options
 @using MMDb.Options
 @inject IOptions<TMDbOptions> TMDbOptions
+@inject IOptions<ExternalLinkOptions> ExternalLinks
 @{
     ViewData["Title"] = Model.Film.Title;
+    Film film = Model.Film;
+    string encodedTitle = Uri.EscapeDataString(film.Title);
+    string? tmdbUrl = film.TMDbId is int tmdbId ? string.Format(ExternalLinks.Value.TMDb, tmdbId) : null;
+    string? imdbUrl = film.IMDbId is string imdbId ? string.Format(ExternalLinks.Value.IMDb, imdbId) : null;
+    string rottenTomatoesUrl = string.Format(ExternalLinks.Value.RottenTomatoes, encodedTitle);
+    string metacriticUrl = string.Format(ExternalLinks.Value.Metacritic, encodedTitle);
 }
 
 @if (TempData["Message"] is string message)
@@ -41,7 +48,15 @@
                 </p>
             </div>
             <div class="d-flex align-items-stretch gap-2">
-                <span class="badge fs-2 text-black" style="@RatingColour.StyleForRating(Model.Film.Rating)">@Model.Film.Rating</span>
+                <span class="badge fs-2 text-black" style="@RatingColour.StyleForRating(Model.Film.Rating)" title="My Rating">@Model.Film.Rating</span>
+                @if (film.CommunityRating is double communityRating)
+                {
+                    <span class="badge fs-2 text-black" style="@RatingColour.StyleForRating(communityRating)" title="Community Rating">@communityRating.ToString("0.0")</span>
+                }
+                else
+                {
+                    <span class="badge fs-2 border border-secondary" style="min-width: 2.5em" title="Community Rating"></span>
+                }
                 <a asp-page="/Films/Edit" asp-route-id="@Model.Film.FilmId" class="btn btn-outline-secondary fs-2 d-flex align-items-center px-3 py-0" title="Edit" aria-label="Edit">
                     <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325" /></svg>
                 </a>
@@ -52,6 +67,13 @@
         {
             <p style="white-space: pre-line">@Model.Film.Overview</p>
         }
+
+        <div class="d-flex flex-wrap gap-3 mt-3">
+            @{ ExternalRating("IMDb", "imdb", imdbUrl, film.IMDbRating?.ToString("0.0"), film.IMDbRating, 0, 10); }
+            @{ ExternalRating("TMDb", "tmdb", tmdbUrl, film.TMDbRating?.ToString("0.0"), film.TMDbRating, 0, 10); }
+            @{ ExternalRating("Rotten Tomatoes", "rottentomatoes", rottenTomatoesUrl, film.RottenTomatoes is int rottenTomatoes ? $"{rottenTomatoes}%" : null, film.RottenTomatoes, 0, 100); }
+            @{ ExternalRating("Metacritic", "metacritic", metacriticUrl, film.Metacritic?.ToString(), film.Metacritic, 0, 100); }
+        </div>
     </div>
 </div>
 
@@ -101,5 +123,18 @@
                 </a>
             }
         </div>
+    }
+}
+
+@{
+    void ExternalRating(string name, string icon, string? url, string? text, double? value, double min, double max)
+    {
+        <a href="@url" target="_blank" rel="noopener" class="btn btn-outline-secondary d-flex align-items-center gap-2 @(url is null ? "disabled" : "")" title="@name">
+            <img src="/img/@(icon).svg" alt="@name" height="20" />
+            @if (value is double rating)
+            {
+                <span class="badge fs-6 text-black" style="@RatingColour.StyleForRating(rating, min, max)">@text</span>
+            }
+        </a>
     }
 }

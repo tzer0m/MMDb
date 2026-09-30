@@ -9,6 +9,7 @@ builder.Services.AddDbContext<MMDbContext>(options => options.UseNpgsql(builder.
 builder.Services.Configure<TMDbOptions>(builder.Configuration.GetSection("TMDb"));
 builder.Services.Configure<OMDbOptions>(builder.Configuration.GetSection("OMDb"));
 builder.Services.Configure<JellyfinOptions>(builder.Configuration.GetSection("Jellyfin"));
+builder.Services.Configure<ExternalLinkOptions>(builder.Configuration.GetSection("ExternalLinks"));
 builder.Services.AddHttpClient<TMDbClient>();
 builder.Services.AddHttpClient<OMDbClient>();
 builder.Services.AddHttpClient<JellyfinClient>();
