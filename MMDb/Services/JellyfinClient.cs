@@ -62,10 +62,10 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options)
     }
 
     /// <summary>
-    /// Gets all movies in the library with their provider IDs.
+    /// Gets all movies in the library with their provider IDs and critics ratings.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task<List<JellyfinItem>> GetMoviesAsync(CancellationToken cancellationToken)
+    public async Task<List<JellyfinItem>> GetMoviesAsync(CancellationToken cancellationToken = default)
     {
         string path = $"Items?userId={options.Value.UserId}&includeItemTypes=Movie&recursive=true&fields=ProviderIds";
         using HttpRequestMessage request = CreateRequest(HttpMethod.Get, path);
