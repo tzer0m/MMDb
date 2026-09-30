@@ -13,16 +13,6 @@ namespace MMDb.Services;
 /// <param name="options">The Jellyfin options.</param>
 public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options)
 {
-    // ONE-TIME IMPORT: remove this method once the Jellyfin/IMDb import is complete.
-    /// <summary>
-    /// Gets every movie the configured user has played.
-    /// </summary>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task<List<JellyfinItem>> GetPlayedMoviesAsync(CancellationToken cancellationToken = default)
-    {
-        return await GetMoviesAsync(true, cancellationToken);
-    }
-
     /// <summary>
     /// Finds a movie in the library by IMDb ID, falling back to TMDb ID.
     /// </summary>
@@ -31,7 +21,7 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options)
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<JellyfinItem?> FindMovieAsync(string? imdbId, int? tmdbId, CancellationToken cancellationToken = default)
     {
-        List<JellyfinItem> movies = await GetMoviesAsync(null, cancellationToken);
+        List<JellyfinItem> movies = await GetMoviesAsync(cancellationToken);
         return movies.FirstOrDefault(x => imdbId is not null && string.Equals(x.IMDbId, imdbId, StringComparison.OrdinalIgnoreCase)) ?? movies.FirstOrDefault(x => tmdbId is not null && x.TMDbId == tmdbId);
     }
 
@@ -55,17 +45,12 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options)
     }
 
     /// <summary>
-    /// Gets all movies in the library with their provider IDs, optionally filtered by played state.
+    /// Gets all movies in the library with their provider IDs.
     /// </summary>
-    /// <param name="isPlayed">True for played only, false for unplayed only, or null for all.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task<List<JellyfinItem>> GetMoviesAsync(bool? isPlayed, CancellationToken cancellationToken)
+    private async Task<List<JellyfinItem>> GetMoviesAsync(CancellationToken cancellationToken)
     {
         string path = $"Items?userId={options.Value.UserId}&includeItemTypes=Movie&recursive=true&fields=ProviderIds";
-        if (isPlayed is bool played)
-        {
-            path += $"&isPlayed={played.ToString().ToLowerInvariant()}";
-        }
         using HttpRequestMessage request = CreateRequest(HttpMethod.Get, path);
         using HttpResponseMessage response = await http.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
