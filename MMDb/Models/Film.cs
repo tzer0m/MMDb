@@ -43,11 +43,6 @@ public class Film
     public int Rating { get; set; }
 
     /// <summary>
-    /// My written review.
-    /// </summary>
-    public string? Review { get; set; }
-
-    /// <summary>
     /// The date I watched the film.
     /// </summary>
     public DateOnly? WatchedOn { get; set; }
