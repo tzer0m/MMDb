@@ -1,52 +1,38 @@
 ﻿@page "/film/{id:int}/edit"
 @model MMDb.Pages.Films.EditModel
+@using Microsoft.Extensions.Options
+@using MMDb.Options
+@inject IOptions<TMDbOptions> TMDbOptions
 @{
-    ViewData["Title"] = $"Edit {Model.Input.Title}";
+    ViewData["Title"] = $"Edit {Model.Film.Title}";
 }
 
 <p><a asp-page="/Films/Details" asp-route-id="@Model.Id">&larr; Back to film</a></p>
-<h1 class="h3 mb-3">Edit @Model.Input.Title</h1>
 
-<form method="post" class="row g-3" style="max-width: 48rem">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="col-12">
-        <label asp-for="Input.Title" class="form-label"></label>
-        <input asp-for="Input.Title" class="form-control" />
-        <span asp-validation-for="Input.Title" class="text-danger small"></span>
-    </div>
-    <div class="col-sm-4">
-        <label asp-for="Input.Year" class="form-label"></label>
-        <input asp-for="Input.Year" class="form-control" />
-        <span asp-validation-for="Input.Year" class="text-danger small"></span>
-    </div>
-    <div class="col-sm-8">
-        <label asp-for="Input.Director" class="form-label"></label>
-        <input asp-for="Input.Director" class="form-control" />
-        <span asp-validation-for="Input.Director" class="text-danger small"></span>
-    </div>
-    <div class="col-sm-4">
-        <label asp-for="Input.RuntimeMinutes" class="form-label"></label>
-        <input asp-for="Input.RuntimeMinutes" class="form-control" />
-        <span asp-validation-for="Input.RuntimeMinutes" class="text-danger small"></span>
-    </div>
-    <div class="col-sm-4">
+<div class="d-flex gap-3 align-items-center mb-4">
+    @if (Model.Film.PosterPath is not null)
+    {
+        <img src="@(TMDbOptions.Value.ImageBaseUrl)w92@(Model.Film.PosterPath)" alt="" class="rounded" style="width: 60px; height: auto" />
+    }
+    <h1 class="h3 mb-0">@Model.Film.Title <span class="text-muted fw-normal">@(Model.Film.Year is int year ? $"({year})" : "")</span></h1>
+</div>
+
+<form method="post" class="row g-3" style="max-width: 32rem">
+    <div class="col-sm-6">
         <label asp-for="Input.Rating" class="form-label"></label>
         <select asp-for="Input.Rating" asp-items="@(Enumerable.Range(1, 10).Select(x => new SelectListItem(x.ToString(), x.ToString())))" class="form-select"></select>
         <span asp-validation-for="Input.Rating" class="text-danger small"></span>
     </div>
-    <div class="col-sm-4">
+    <div class="col-sm-6">
         <label asp-for="Input.WatchedOn" class="form-label"></label>
         <input asp-for="Input.WatchedOn" class="form-control" />
         <span asp-validation-for="Input.WatchedOn" class="text-danger small"></span>
     </div>
-    <div class="col-12">
-        <label asp-for="Input.Overview" class="form-label"></label>
-        <textarea asp-for="Input.Overview" class="form-control" rows="4"></textarea>
-    </div>
-    <div class="col-12 d-flex gap-2">
+    <div class="col-12 d-flex flex-wrap gap-2">
         <button type="submit" class="btn btn-primary">Save</button>
+        <button type="submit" asp-page-handler="Refresh" formnovalidate class="btn btn-outline-secondary">Refresh data</button>
         <a asp-page="/Films/Details" asp-route-id="@Model.Id" class="btn btn-link">Cancel</a>
-        <button type="submit" asp-page-handler="Delete" formnovalidate class="btn btn-outline-danger ms-auto" onclick="return confirm('Delete this film?')">Delete</button>
+        <button type="submit" asp-page-handler="Delete" formnovalidate class="btn btn-outline-danger ms-auto" onclick="return confirm('Delete this film? Its rating stays in Jellyfin.')">Delete</button>
     </div>
 </form>
 
