@@ -1,53 +1,94 @@
 ﻿@page "/film/add"
 @model MMDb.Pages.Films.AddModel
+@using Microsoft.Extensions.Options
+@using MMDb.Models.TMDb
+@using MMDb.Options
+@inject IOptions<TMDbOptions> TMDbOptions
 @{
     ViewData["Title"] = "Add film";
+    string imageBaseUrl = TMDbOptions.Value.ImageBaseUrl;
 }
 
 <p><a asp-page="/Index">&larr; All films</a></p>
 <h1 class="h3 mb-3">Add film</h1>
 
-<form method="post" class="row g-3" style="max-width: 48rem">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="col-12">
-        <label asp-for="Input.Title" class="form-label"></label>
-        <input asp-for="Input.Title" class="form-control" autofocus />
-        <span asp-validation-for="Input.Title" class="text-danger small"></span>
+@if (Model.Selected is TMDbMovie movie)
+{
+    <div class="d-flex gap-3 mb-4" style="max-width: 48rem">
+        @if (movie.PosterPath is not null)
+        {
+            <img src="@(imageBaseUrl)w185@(movie.PosterPath)" alt="" class="rounded" style="width: 120px; height: auto" />
+        }
+        <div>
+            <h2 class="h4 mb-1">@movie.Title <span class="text-muted fw-normal">@(movie.Year is int year ? $"({year})" : "")</span></h2>
+            @if (!string.IsNullOrWhiteSpace(movie.Tagline))
+            {
+                <p class="fst-italic text-muted mb-1">@movie.Tagline</p>
+            }
+            <p class="small mb-2">@movie.Overview</p>
+            <a asp-page="/Films/Add" asp-route-query="@Model.Query" class="small">Pick a different film</a>
+        </div>
     </div>
-    <div class="col-sm-4">
-        <label asp-for="Input.Year" class="form-label"></label>
-        <input asp-for="Input.Year" class="form-control" />
-        <span asp-validation-for="Input.Year" class="text-danger small"></span>
+
+    <form method="post" asp-route-tmdbId="@movie.Id" asp-route-query="@Model.Query" class="row g-3" style="max-width: 32rem">
+        <div class="col-sm-6">
+            <label asp-for="Input.Rating" class="form-label"></label>
+            <select asp-for="Input.Rating" asp-items="@(Enumerable.Range(1, 10).Select(x => new SelectListItem(x.ToString(), x.ToString())))" class="form-select">
+                <option value="">Choose&hellip;</option>
+            </select>
+            <span asp-validation-for="Input.Rating" class="text-danger small"></span>
+        </div>
+        <div class="col-sm-6">
+            <label asp-for="Input.WatchedOn" class="form-label"></label>
+            <input asp-for="Input.WatchedOn" class="form-control" />
+            <span asp-validation-for="Input.WatchedOn" class="text-danger small"></span>
+        </div>
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Add film</button>
+            <a asp-page="/Index" class="btn btn-link">Cancel</a>
+        </div>
+    </form>
+}
+else
+{
+    <form method="get" class="d-flex gap-2 mb-4" style="max-width: 32rem">
+        <input type="search" name="query" value="@Model.Query" class="form-control" placeholder="Search TMDb for a film" autofocus />
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Query) && Model.Results.Count == 0)
+    {
+        <p class="text-muted">No films found for "@Model.Query".</p>
+    }
+
+    <div class="list-group" style="max-width: 48rem">
+        @foreach (TMDbSearchResult result in Model.Results)
+        {
+            <div class="list-group-item d-flex gap-3 align-items-start">
+                @if (result.PosterPath is not null)
+                {
+                    <img src="@(imageBaseUrl)w92@(result.PosterPath)" alt="" class="rounded" style="width: 46px; height: auto" loading="lazy" />
+                }
+                else
+                {
+                    <div class="rounded bg-secondary-subtle" style="width: 46px; height: 69px"></div>
+                }
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">@result.Title <span class="text-muted fw-normal">@(result.Year is int year ? $"({year})" : "")</span></div>
+                    <div class="small text-muted text-truncate" style="max-width: 36rem">@result.Overview</div>
+                </div>
+                @if (Model.ExistingFilms.TryGetValue(result.Id, out int filmId))
+                {
+                    <a asp-page="/Films/Details" asp-route-id="@filmId" class="btn btn-sm btn-outline-secondary">Rated</a>
+                }
+                else
+                {
+                    <a asp-page="/Films/Add" asp-route-tmdbId="@result.Id" asp-route-query="@Model.Query" class="btn btn-sm btn-primary">Select</a>
+                }
+            </div>
+        }
     </div>
-    <div class="col-sm-8">
-        <label asp-for="Input.Director" class="form-label"></label>
-        <input asp-for="Input.Director" class="form-control" />
-        <span asp-validation-for="Input.Director" class="text-danger small"></span>
-    </div>
-    <div class="col-sm-4">
-        <label asp-for="Input.RuntimeMinutes" class="form-label"></label>
-        <input asp-for="Input.RuntimeMinutes" class="form-control" />
-        <span asp-validation-for="Input.RuntimeMinutes" class="text-danger small"></span>
-    </div>
-    <div class="col-sm-4">
-        <label asp-for="Input.Rating" class="form-label"></label>
-        <select asp-for="Input.Rating" asp-items="@(Enumerable.Range(1, 10).Select(x => new SelectListItem(x.ToString(), x.ToString())))" class="form-select"></select>
-        <span asp-validation-for="Input.Rating" class="text-danger small"></span>
-    </div>
-    <div class="col-sm-4">
-        <label asp-for="Input.WatchedOn" class="form-label"></label>
-        <input asp-for="Input.WatchedOn" class="form-control" />
-        <span asp-validation-for="Input.WatchedOn" class="text-danger small"></span>
-    </div>
-    <div class="col-12">
-        <label asp-for="Input.Overview" class="form-label"></label>
-        <textarea asp-for="Input.Overview" class="form-control" rows="4"></textarea>
-    </div>
-    <div class="col-12">
-        <button type="submit" class="btn btn-primary">Add film</button>
-        <a asp-page="/Index" class="btn btn-link">Cancel</a>
-    </div>
-</form>
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

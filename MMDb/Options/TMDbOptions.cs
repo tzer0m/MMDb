@@ -11,6 +11,11 @@ public class TMDbOptions
     public string BaseUrl { get; set; } = string.Empty;
 
     /// <summary>
+    /// The base URL for TMDb images, before the size segment.
+    /// </summary>
+    public string ImageBaseUrl { get; set; } = string.Empty;
+
+    /// <summary>
     /// The TMDb API read access token.
     /// </summary>
     public string ApiReadAccessToken { get; set; } = string.Empty;

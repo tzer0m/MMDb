@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Options;
+using MMDb.Models;
 using MMDb.Models.Jellyfin;
 using MMDb.Options;
 
@@ -23,6 +24,22 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options)
     {
         List<JellyfinItem> movies = await GetMoviesAsync(cancellationToken);
         return movies.FirstOrDefault(x => imdbId is not null && string.Equals(x.IMDbId, imdbId, StringComparison.OrdinalIgnoreCase)) ?? movies.FirstOrDefault(x => tmdbId is not null && x.TMDbId == tmdbId);
+    }
+
+    /// <summary>
+    /// Pushes a film's rating to its critics rating in Jellyfin, returning false if the film isn't in the library.
+    /// </summary>
+    /// <param name="film">The film whose rating to push.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<bool> PushRatingAsync(Film film, CancellationToken cancellationToken = default)
+    {
+        JellyfinItem? item = await FindMovieAsync(film.IMDbId, film.TMDbId, cancellationToken);
+        if (item is null)
+        {
+            return false;
+        }
+        await SetCriticRatingAsync(item.Id, film.Rating, cancellationToken);
+        return true;
     }
 
     /// <summary>
