@@ -21,6 +21,7 @@ builder.Services.AddHttpClient<OMDbClient>();
 builder.Services.AddHttpClient<JellyfinClient>();
 builder.Services.AddScoped<FilmDataService>();
 builder.Services.AddHostedService<RatingsRefreshService>();
+builder.Services.AddHealthChecks().AddDbContextCheck<MMDbContext>();
 
 // Sign in with Pocket ID; the cookie keeps me signed in for 30 days.
 OidcOptions oidc = builder.Configuration.GetSection("Oidc").Get<OidcOptions>() ?? new OidcOptions();
@@ -85,4 +86,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();
+app.MapHealthChecks("/health");
 app.Run();
