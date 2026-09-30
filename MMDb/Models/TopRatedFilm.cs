@@ -31,6 +31,16 @@ public class TopRatedFilm
     public double TMDbRating { get; set; }
 
     /// <summary>
+    /// The community rating, falling back to the TMDb rating alone when OMDb has nothing.
+    /// </summary>
+    public double? CommunityRating { get; set; }
+
+    /// <summary>
+    /// Which ratings went into the community rating, shown as the badge tooltip.
+    /// </summary>
+    public string RatingSources { get; set; } = string.Empty;
+
+    /// <summary>
     /// Their role: Director, the character they played, or both.
     /// </summary>
     public string Role { get; set; } = string.Empty;

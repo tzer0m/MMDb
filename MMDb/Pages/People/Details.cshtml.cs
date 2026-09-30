@@ -18,10 +18,11 @@ namespace MMDb.Pages.People;
 /// <param name="db">The database context.</param>
 /// <param name="filmData">The film data service.</param>
 /// <param name="tmdb">The TMDb client.</param>
+/// <param name="omdbCache">The cached OMDb ratings.</param>
 /// <param name="cache">The memory cache for TMDb credits.</param>
 /// <param name="options">The people options.</param>
 /// <param name="logger">The logger.</param>
-public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDbClient tmdb, IMemoryCache cache, IOptions<PeopleOptions> options, ILogger<DetailsModel> logger) : PageModel
+public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDbClient tmdb, OMDbCacheService omdbCache, IMemoryCache cache, IOptions<PeopleOptions> options, ILogger<DetailsModel> logger) : PageModel
 {
     /// <summary>
     /// The person being displayed.
@@ -145,7 +146,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDb
     }
 
     /// <summary>
-    /// Loads a person's top rated films from their cached TMDb credits, marking the ones I have rated.
+    /// Loads a person's top rated films from their cached TMDb credits, marking the ones I have rated and working out community ratings, sorted by community rating.
     /// </summary>
     /// <param name="personId">The TMDb person ID.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -172,13 +173,66 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDb
         List<TMDbPersonCredit> all = [.. credits.Cast, .. credits.Crew.Where(x => x.Job == "Director")];
         List<TopRatedFilm> topRated = [.. all.Where(x => x.VoteCount >= options.Value.TopRatedMinVotes).GroupBy(x => x.Id).Select(x => new TopRatedFilm { TMDbId = x.Key, Title = x.First().Title, Year = x.First().Year, PosterPath = x.First().PosterPath, TMDbRating = Math.Round(x.First().VoteAverage, 1), Role = string.Join(", ", x.OrderBy(c => c.Job == "Director" ? 0 : 1).Select(c => c.Job == "Director" ? "Director" : CharacterName.Clean(c.Character) ?? "Cast").Distinct()) }).OrderByDescending(x => x.TMDbRating).ThenBy(x => x.Title).Take(options.Value.TopRatedCount)];
         List<int> tmdbIds = [.. topRated.Select(x => x.TMDbId)];
-        Dictionary<int, int> seen = await db.Films.Where(x => x.TMDbId != null && tmdbIds.Contains(x.TMDbId.Value)).ToDictionaryAsync(x => x.TMDbId!.Value, x => x.FilmId, cancellationToken);
+        Dictionary<int, Film> seen = await db.Films.AsNoTracking().Where(x => x.TMDbId != null && tmdbIds.Contains(x.TMDbId.Value)).ToDictionaryAsync(x => x.TMDbId!.Value, cancellationToken);
+        TMDbMovie?[] details = await Task.WhenAll(topRated.Where(x => !seen.ContainsKey(x.TMDbId)).Select(x => TryGetMovieAsync(x.TMDbId, cancellationToken)));
+        Dictionary<int, string> imdbIds = details.OfType<TMDbMovie>().Where(x => !string.IsNullOrWhiteSpace(x.ImdbId)).ToDictionary(x => x.Id, x => x.ImdbId!);
+        Dictionary<string, OMDbCacheEntry> ratings = await omdbCache.GetManyAsync(imdbIds.Values, cancellationToken);
         foreach (TopRatedFilm film in topRated)
         {
-            film.FilmId = seen.TryGetValue(film.TMDbId, out int filmId) ? filmId : null;
+            if (seen.TryGetValue(film.TMDbId, out Film? rated))
+            {
+                film.FilmId = rated.FilmId;
+                SetCommunityRating(film, rated.TMDbRating, rated.IMDbRating, rated.RottenTomatoes, rated.Metacritic);
+            }
+            else
+            {
+                OMDbCacheEntry? entry = imdbIds.TryGetValue(film.TMDbId, out string? imdbId) ? ratings.GetValueOrDefault(imdbId) : null;
+                SetCommunityRating(film, film.TMDbRating, entry?.IMDbRating, entry?.RottenTomatoes, entry?.Metacritic);
+            }
         }
-        return topRated;
+        return [.. topRated.OrderByDescending(x => x.CommunityRating ?? x.TMDbRating).ThenBy(x => x.Title)];
     }
+
+    /// <summary>
+    /// Sets a top rated film's community rating and its sources.
+    /// </summary>
+    /// <param name="film">The film to update.</param>
+    /// <param name="tmdbRating">The TMDb rating, out of 10.</param>
+    /// <param name="imdbRating">The IMDb rating, out of 10.</param>
+    /// <param name="rottenTomatoes">The Rotten Tomatoes score, as a percentage.</param>
+    /// <param name="metacritic">The Metacritic score, out of 100.</param>
+    private static void SetCommunityRating(TopRatedFilm film, double? tmdbRating, double? imdbRating, int? rottenTomatoes, int? metacritic)
+    {
+        film.CommunityRating = CommunityRatingCalculator.Calculate(tmdbRating, imdbRating, rottenTomatoes, metacritic);
+        film.RatingSources = CommunityRatingCalculator.Describe(tmdbRating, imdbRating, rottenTomatoes, metacritic);
+    }
+
+    /// <summary>
+    /// Gets a movie's details from TMDb for its IMDb ID, returning null instead of throwing if the request fails.
+    /// </summary>
+    /// <param name="tmdbId">The TMDb movie ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task<TMDbMovie?> TryGetMovieAsync(int tmdbId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await tmdb.GetMovieAsync(tmdbId, cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            LogMovieFailed(logger, ex, tmdbId);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Logs that a film's TMDb details could not be loaded, so its rating falls back to TMDb alone.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    /// <param name="tmdbId">The TMDb movie ID.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not load TMDb details for {TMDbId}; using the TMDb rating alone.")]
+    private static partial void LogMovieFailed(ILogger logger, Exception exception, int tmdbId);
 
     /// <summary>
     /// Logs that a person's details could not be fetched from TMDb.

@@ -113,7 +113,7 @@
                 <th class="d-none d-md-table-cell">Title</th>
                 <th class="d-none d-md-table-cell">Year</th>
                 <th class="d-none d-md-table-cell">Role</th>
-                <th class="d-none d-md-table-cell text-center" title="TMDb Rating">TMDb</th>
+                <th class="d-none d-md-table-cell text-center" title="Community Rating">CR</th>
             </tr>
         </thead>
         <tbody>
@@ -131,12 +131,20 @@
                         <div class="text-truncate" title="@film.Title">@film.Title</div>
                         <div class="d-flex d-md-none align-items-center gap-2 mt-1">
                             <span class="text-truncate text-muted small" title="@film.Role">@(film.Year is int year ? $"{year} \u00b7 " : "")@film.Role</span>
-                            <span class="badge text-black ms-auto" style="@RatingColour.StyleForRating(film.TMDbRating, 0, 10)" title="TMDb Rating">@film.TMDbRating.ToString("0.0")</span>
+                            @if (film.CommunityRating is double mobileRating)
+                            {
+                                <span class="badge text-black ms-auto" style="@RatingColour.StyleForRating(mobileRating)" title="@film.RatingSources">@mobileRating.ToString("0.0")</span>
+                            }
                         </div>
                     </td>
                     <td class="d-none d-md-table-cell">@film.Year</td>
                     <td class="d-none d-md-table-cell text-truncate" style="max-width: 16rem" title="@film.Role">@film.Role</td>
-                    <td class="d-none d-md-table-cell text-center"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.TMDbRating, 0, 10)">@film.TMDbRating.ToString("0.0")</span></td>
+                    <td class="d-none d-md-table-cell text-center">
+                        @if (film.CommunityRating is double rating)
+                        {
+                            <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(rating)" title="@film.RatingSources">@rating.ToString("0.0")</span>
+                        }
+                    </td>
                 </tr>
             }
         </tbody>
