@@ -105,7 +105,22 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDb
         Person? person = await db.People.FirstOrDefaultAsync(x => x.PersonId == id, cancellationToken);
         if (person is null)
         {
-            return NotFound();
+            // Someone from a film I have not rated yet: fetch them from TMDb and store them so their details are cached.
+            person = new Person { PersonId = id };
+            try
+            {
+                if (!await filmData.ApplyPersonDetailsAsync(person, cancellationToken))
+                {
+                    return NotFound();
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                LogDetailsFailed(logger, ex, id.ToString());
+                return NotFound();
+            }
+            db.People.Add(person);
+            await db.SaveChangesAsync(cancellationToken);
         }
         if (person.DetailsUpdatedAt is null || person.DetailsUpdatedAt < DateTime.UtcNow - options.Value.DetailsMaxAge)
         {

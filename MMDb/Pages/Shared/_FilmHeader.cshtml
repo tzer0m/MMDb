@@ -10,6 +10,7 @@
     string? imdbUrl = Model.IMDbId is string imdbId ? string.Format(ExternalLinks.Value.IMDb, imdbId) : null;
     string rottenTomatoesUrl = string.Format(ExternalLinks.Value.RottenTomatoes, encodedTitle);
     string metacriticUrl = string.Format(ExternalLinks.Value.Metacritic, encodedTitle);
+    string swagBaggerUrl = string.Format(ExternalLinks.Value.SwagBagger, Uri.EscapeDataString(Model.Year is int searchYear ? $"{Model.Title} {searchYear}" : Model.Title));
 }
 
 <div class="detail-layout">
@@ -71,6 +72,13 @@
         }
 
         <div class="d-flex flex-wrap gap-3 mt-3">
+            @if (!isRated && User.Identity?.IsAuthenticated == true)
+            {
+                <a href="@swagBaggerUrl" target="_blank" rel="noopener" class="btn btn-outline-secondary d-flex align-items-center gap-2" title="Search SwagBagger">
+                    <img src="/img/swagbagger.svg" alt="SwagBagger" height="20" />
+                    <span class="text-body fw-bold">Search</span>
+                </a>
+            }
             @{ ExternalRating("IMDb", "imdb", imdbUrl, Model.IMDbRating?.ToString("0.0"), Model.IMDbRating, 0, 10); }
             @{ ExternalRating("TMDb", "tmdb", tmdbUrl, Model.TMDbRating?.ToString("0.0"), Model.TMDbRating, 0, 10); }
             @{ ExternalRating("Rotten Tomatoes", "rottentomatoes", rottenTomatoesUrl, Model.RottenTomatoes is int rottenTomatoes ? $"{rottenTomatoes}%" : null, Model.RottenTomatoes, 0, 100); }

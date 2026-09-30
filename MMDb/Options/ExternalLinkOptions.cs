@@ -34,4 +34,9 @@ public class ExternalLinkOptions
     /// The site's GitHub repository.
     /// </summary>
     public string GitHub { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The SwagBagger search page, with {0} as the URL-encoded title and year.
+    /// </summary>
+    public string SwagBagger { get; set; } = string.Empty;
 }
