@@ -36,18 +36,18 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options)
     }
 
     /// <summary>
-    /// Sets a movie's community rating, leaving all other metadata unchanged.
+    /// Sets a movie's critics rating, leaving all other metadata unchanged.
     /// </summary>
     /// <param name="itemId">The Jellyfin item ID.</param>
     /// <param name="rating">The rating, from 1 to 10.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task SetCommunityRatingAsync(string itemId, int rating, CancellationToken cancellationToken = default)
+    public async Task SetCriticRatingAsync(string itemId, int rating, CancellationToken cancellationToken = default)
     {
         using HttpRequestMessage getRequest = CreateRequest(HttpMethod.Get, $"Items/{itemId}?userId={options.Value.UserId}");
         using HttpResponseMessage getResponse = await http.SendAsync(getRequest, cancellationToken);
         getResponse.EnsureSuccessStatusCode();
         JsonObject item = await getResponse.Content.ReadFromJsonAsync<JsonObject>(cancellationToken) ?? throw new InvalidOperationException($"Jellyfin returned no metadata for item {itemId}.");
-        item["CommunityRating"] = rating;
+        item["CriticRating"] = rating;
         using HttpRequestMessage postRequest = CreateRequest(HttpMethod.Post, $"Items/{itemId}");
         postRequest.Content = JsonContent.Create(item);
         using HttpResponseMessage postResponse = await http.SendAsync(postRequest, cancellationToken);
