@@ -36,7 +36,7 @@ public class ExternalLinkOptions
     public string GitHub { get; set; } = string.Empty;
 
     /// <summary>
-    /// The SwagBagger search page, with {0} as the URL-encoded title and year.
+    /// The SwagBagger search page, with {0} as the URL-encoded search, {1} as the URL-encoded title and {2} as the year.
     /// </summary>
     public string SwagBagger { get; set; } = string.Empty;
 }
