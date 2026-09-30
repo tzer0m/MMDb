@@ -80,3 +80,9 @@
     height: 48px;
   }
 }
+
+/* Films I have already seen in a talent's Other Roles table: faded and fully greyscale, including posters and ratings. */
+.seen-film > td {
+  opacity: 0.3;
+  filter: grayscale(1);
+}

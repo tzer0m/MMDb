@@ -20,6 +20,7 @@ builder.Services.AddHttpClient<TMDbClient>();
 builder.Services.AddHttpClient<OMDbClient>();
 builder.Services.AddHttpClient<JellyfinClient>();
 builder.Services.AddScoped<FilmDataService>();
+builder.Services.AddMemoryCache();
 builder.Services.AddHostedService<RatingsRefreshService>();
 builder.Services.AddHealthChecks().AddDbContextCheck<MMDbContext>();
 

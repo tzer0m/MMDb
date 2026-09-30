@@ -51,6 +51,16 @@ public class TMDbClient(HttpClient http, IOptions<TMDbOptions> options)
     }
 
     /// <summary>
+    /// Gets every film a person acted in or worked on, returning null if TMDb has no such person.
+    /// </summary>
+    /// <param name="personId">The TMDb person ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<TMDbPersonCredits?> GetPersonMovieCreditsAsync(int personId, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<TMDbPersonCredits>($"person/{personId}/movie_credits", cancellationToken);
+    }
+
+    /// <summary>
     /// Sends an authenticated GET request and deserialises the response, returning null on 404.
     /// </summary>
     /// <typeparam name="T">The response type.</typeparam>

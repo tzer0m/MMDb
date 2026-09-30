@@ -1,22 +1,27 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using MMDb.Data;
+using MMDb.Helpers;
 using MMDb.Models;
+using MMDb.Models.TMDb;
 using MMDb.Options;
 using MMDb.Services;
 
 namespace MMDb.Pages.People;
 
 /// <summary>
-/// Shows a director or actor and every film of theirs I have rated.
+/// Shows a director or actor, every film of theirs I have rated, and their top rated films on TMDb.
 /// </summary>
 /// <param name="db">The database context.</param>
 /// <param name="filmData">The film data service.</param>
+/// <param name="tmdb">The TMDb client.</param>
+/// <param name="cache">The memory cache for TMDb credits.</param>
 /// <param name="options">The people options.</param>
 /// <param name="logger">The logger.</param>
-public partial class DetailsModel(MMDbContext db, FilmDataService filmData, IOptions<PeopleOptions> options, ILogger<DetailsModel> logger) : PageModel
+public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDbClient tmdb, IMemoryCache cache, IOptions<PeopleOptions> options, ILogger<DetailsModel> logger) : PageModel
 {
     /// <summary>
     /// The person being displayed.
@@ -32,6 +37,11 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, IOpt
     /// Their role on each film, keyed by film ID: Director, the character they played, or both.
     /// </summary>
     public Dictionary<int, string> Roles { get; set; } = [];
+
+    /// <summary>
+    /// Their top rated films on TMDb, including ones I have seen.
+    /// </summary>
+    public List<TopRatedFilm> TopRated { get; set; } = [];
 
     /// <summary>
     /// My average rating across their films.
@@ -114,8 +124,45 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, IOpt
         Person = person;
         List<FilmCredit> credits = await db.FilmCredits.AsNoTracking().Include(x => x.Film).Where(x => x.PersonId == id).ToListAsync(cancellationToken);
         Films = [.. credits.Select(x => x.Film).DistinctBy(x => x.FilmId).OrderBy(x => x.Year ?? int.MaxValue).ThenBy(x => x.Title)];
+        TopRated = await LoadTopRatedAsync(id, cancellationToken);
         Roles = credits.GroupBy(x => x.FilmId).ToDictionary(x => x.Key, x => string.Join(", ", x.OrderBy(c => c.Role).Select(c => c.Role == CreditRole.Director ? "Director" : c.Character ?? "Cast")));
         return Page();
+    }
+
+    /// <summary>
+    /// Loads a person's top rated films from their cached TMDb credits, marking the ones I have rated.
+    /// </summary>
+    /// <param name="personId">The TMDb person ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task<List<TopRatedFilm>> LoadTopRatedAsync(int personId, CancellationToken cancellationToken)
+    {
+        TMDbPersonCredits? credits;
+        try
+        {
+            credits = await cache.GetOrCreateAsync($"person-credits-{personId}", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = options.Value.CreditsCacheDuration;
+                return await tmdb.GetPersonMovieCreditsAsync(personId, cancellationToken);
+            });
+        }
+        catch (HttpRequestException ex)
+        {
+            LogCreditsFailed(logger, ex, personId);
+            return [];
+        }
+        if (credits is null)
+        {
+            return [];
+        }
+        List<TMDbPersonCredit> all = [.. credits.Cast, .. credits.Crew.Where(x => x.Job == "Director")];
+        List<TopRatedFilm> topRated = [.. all.Where(x => x.VoteCount >= options.Value.TopRatedMinVotes).GroupBy(x => x.Id).Select(x => new TopRatedFilm { TMDbId = x.Key, Title = x.First().Title, Year = x.First().Year, PosterPath = x.First().PosterPath, TMDbRating = Math.Round(x.First().VoteAverage, 1), Role = string.Join(", ", x.OrderBy(c => c.Job == "Director" ? 0 : 1).Select(c => c.Job == "Director" ? "Director" : CharacterName.Clean(c.Character) ?? "Cast").Distinct()) }).OrderByDescending(x => x.TMDbRating).ThenBy(x => x.Title).Take(options.Value.TopRatedCount)];
+        List<int> tmdbIds = [.. topRated.Select(x => x.TMDbId)];
+        Dictionary<int, int> seen = await db.Films.Where(x => x.TMDbId != null && tmdbIds.Contains(x.TMDbId.Value)).ToDictionaryAsync(x => x.TMDbId!.Value, x => x.FilmId, cancellationToken);
+        foreach (TopRatedFilm film in topRated)
+        {
+            film.FilmId = seen.TryGetValue(film.TMDbId, out int filmId) ? filmId : null;
+        }
+        return topRated;
     }
 
     /// <summary>
@@ -126,4 +173,13 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, IOpt
     /// <param name="name">The person's name.</param>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not fetch TMDb details for {Name}; showing cached details.")]
     private static partial void LogDetailsFailed(ILogger logger, Exception exception, string name);
+
+    /// <summary>
+    /// Logs that a person's film credits could not be fetched from TMDb.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    /// <param name="personId">The TMDb person ID.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not fetch TMDb film credits for person {PersonId}.")]
+    private static partial void LogCreditsFailed(ILogger logger, Exception exception, int personId);
 }

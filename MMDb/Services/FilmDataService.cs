@@ -1,6 +1,6 @@
-using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using MMDb.Data;
+using MMDb.Helpers;
 using MMDb.Models;
 using MMDb.Models.OMDb;
 using MMDb.Models.TMDb;
@@ -102,7 +102,7 @@ public class FilmDataService(MMDbContext db, TMDbClient tmdb, OMDbClient omdb)
     private async Task ApplyCreditsAsync(Film film, List<TMDbCrewMember> crew, List<TMDbCastMember> cast, CancellationToken cancellationToken)
     {
         List<(int PersonId, string Name, string? ProfilePath, CreditRole Role, int Order, string? Character)> wanted = [.. crew.Where(x => x.Job == "Director").DistinctBy(x => x.Id).Select((x, index) => (x.Id, x.Name, x.ProfilePath, CreditRole.Director, index, (string?)null))];
-        wanted.AddRange(cast.OrderBy(x => x.Order).DistinctBy(x => x.Id).Take(10).Select(x => (x.Id, x.Name, x.ProfilePath, CreditRole.Cast, x.Order, CleanCharacter(x.Character))));
+        wanted.AddRange(cast.OrderBy(x => x.Order).DistinctBy(x => x.Id).Take(10).Select(x => (x.Id, x.Name, x.ProfilePath, CreditRole.Cast, x.Order, CharacterName.Clean(x.Character))));
         List<int> personIds = [.. wanted.Select(x => x.PersonId).Distinct()];
         Dictionary<int, Person> people = db.People.Local.Where(x => personIds.Contains(x.PersonId)).ToDictionary(x => x.PersonId);
         List<int> untracked = [.. personIds.Where(x => !people.ContainsKey(x))];
@@ -139,15 +139,5 @@ public class FilmDataService(MMDbContext db, TMDbClient tmdb, OMDbClient omdb)
                 existing.Character = credit.Character;
             }
         }
-    }
-
-    /// <summary>
-    /// Removes "(voice)" from a TMDb character name, returning null if nothing is left.
-    /// </summary>
-    /// <param name="character">The character name from TMDb.</param>
-    private static string? CleanCharacter(string? character)
-    {
-        string cleaned = Regex.Replace(character ?? string.Empty, @"\s*\(voice\)", string.Empty, RegexOptions.IgnoreCase).Trim();
-        return cleaned.Length == 0 ? null : cleaned;
     }
 }

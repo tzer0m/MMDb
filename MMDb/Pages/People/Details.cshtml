@@ -54,7 +54,8 @@
     </div>
 </div>
 
-<table id="person-films" class="table table-hover align-middle w-100 fs-5 film-table">
+<h2 class="h4 mt-4">Seen In</h2>
+<table id="person-films" class="table table-hover align-middle w-100 fs-5 film-table clickable-rows">
     <thead>
         <tr>
             <th class="d-none d-md-table-cell"></th>
@@ -102,15 +103,55 @@
     </tbody>
 </table>
 
+@if (Model.TopRated.Count > 0)
+{
+    <h2 class="h4 mt-4">Other Roles</h2>
+    <table class="table table-hover align-middle w-100 fs-5 film-table clickable-rows">
+        <thead>
+            <tr>
+                <th class="d-none d-md-table-cell"></th>
+                <th class="d-none d-md-table-cell">Title</th>
+                <th class="d-none d-md-table-cell">Year</th>
+                <th class="d-none d-md-table-cell">Role</th>
+                <th class="d-none d-md-table-cell text-center" title="TMDb Rating">TMDb</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (TopRatedFilm film in Model.TopRated)
+            {
+                string href = film.FilmId is int filmId ? Url.Page("/Films/Details", new { id = filmId })! : User.Identity?.IsAuthenticated == true ? Url.Page("/Films/Add", new { tmdbId = film.TMDbId })! : string.Format(ExternalLinks.Value.TMDb, film.TMDbId);
+                <tr data-href="@href" class="@(film.FilmId is null ? "" : "seen-film")" title="@(film.FilmId is null ? "" : "Seen")">
+                    <td class="p-1">
+                        @if (film.PosterPath is not null)
+                        {
+                            <img src="@(imageBaseUrl)w92@(film.PosterPath)" alt="" class="rounded" width="43" height="64" loading="lazy" />
+                        }
+                    </td>
+                    <td style="max-width: 0; width: 100%">
+                        <div class="text-truncate" title="@film.Title">@film.Title</div>
+                        <div class="d-flex d-md-none align-items-center gap-2 mt-1">
+                            <span class="text-truncate text-muted small" title="@film.Role">@(film.Year is int year ? $"{year} \u00b7 " : "")@film.Role</span>
+                            <span class="badge text-black ms-auto" style="@RatingColour.StyleForRating(film.TMDbRating, 0, 10)" title="TMDb Rating">@film.TMDbRating.ToString("0.0")</span>
+                        </div>
+                    </td>
+                    <td class="d-none d-md-table-cell">@film.Year</td>
+                    <td class="d-none d-md-table-cell text-truncate" style="max-width: 16rem" title="@film.Role">@film.Role</td>
+                    <td class="d-none d-md-table-cell text-center"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.TMDbRating, 0, 10)">@film.TMDbRating.ToString("0.0")</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
 @section Styles {
     <style>
-        #person-films tbody tr[data-href] { cursor: pointer; }
+        .clickable-rows tbody tr[data-href] { cursor: pointer; }
     </style>
 }
 
 @section Scripts {
     <script>
-        document.querySelector('#person-films tbody').addEventListener('click', event => {
+        document.querySelectorAll('.clickable-rows tbody').forEach(body => body.addEventListener('click', event => {
             const row = event.target.closest('tr[data-href]');
             if (!row) {
                 return;
@@ -121,6 +162,6 @@
             else {
                 window.location.href = row.dataset.href;
             }
-        });
+        }));
     </script>
 }
