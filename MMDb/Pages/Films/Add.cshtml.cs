@@ -41,6 +41,11 @@ public class AddModel(MMDbContext db, TMDbClient tmdb, FilmDataService filmData,
     public Dictionary<int, int> ExistingFilms { get; set; } = [];
 
     /// <summary>
+    /// The director names for each search result, keyed by TMDb ID.
+    /// </summary>
+    public Dictionary<int, string> Directors { get; set; } = [];
+
+    /// <summary>
     /// The selected film's details from TMDb.
     /// </summary>
     public TMDbMovie? Selected { get; set; }
@@ -78,6 +83,8 @@ public class AddModel(MMDbContext db, TMDbClient tmdb, FilmDataService filmData,
         }
         Results = await tmdb.SearchAsync(Query.Trim(), cancellationToken);
         List<int> ids = [.. Results.Select(x => x.Id)];
+        TMDbMovie?[] details = await Task.WhenAll(ids.Select(x => TryGetMovieAsync(x, cancellationToken)));
+        Directors = details.OfType<TMDbMovie>().ToDictionary(x => x.Id, x => string.Join(", ", (x.Credits?.Crew ?? []).Where(c => c.Job == "Director").Select(c => c.Name).Distinct()));
         ExistingFilms = await db.Films.Where(x => x.TMDbId != null && ids.Contains(x.TMDbId.Value)).ToDictionaryAsync(x => x.TMDbId!.Value, x => x.FilmId, cancellationToken);
         return Page();
     }
@@ -120,6 +127,24 @@ public class AddModel(MMDbContext db, TMDbClient tmdb, FilmDataService filmData,
         await db.SaveChangesAsync(cancellationToken);
         TempData["Message"] = await PushToJellyfinAsync(film, cancellationToken);
         return RedirectToPage("/Films/Details", new { id = film.FilmId });
+    }
+
+    /// <summary>
+    /// Gets a movie's details from TMDb, returning null instead of throwing if the request fails.
+    /// </summary>
+    /// <param name="tmdbId">The TMDb movie ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task<TMDbMovie?> TryGetMovieAsync(int tmdbId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await tmdb.GetMovieAsync(tmdbId, cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogWarning(ex, "Could not load TMDb details for {TMDbId}.", tmdbId);
+            return null;
+        }
     }
 
     /// <summary>
