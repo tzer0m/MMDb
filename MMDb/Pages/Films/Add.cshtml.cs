@@ -52,7 +52,7 @@ public class AddModel(MMDbContext db, TMDbClient tmdb, FilmDataService filmData,
     public FilmInput Input { get; set; } = new();
 
     /// <summary>
-    /// Shows search results, or the rating form for a selected film.
+    /// Shows TMDb search results, or the rating form for a selected film, returning home if neither was asked for.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
@@ -72,12 +72,13 @@ public class AddModel(MMDbContext db, TMDbClient tmdb, FilmDataService filmData,
             Input.WatchedOn = DateOnly.FromDateTime(DateTime.Today);
             return Page();
         }
-        if (!string.IsNullOrWhiteSpace(Query))
+        if (string.IsNullOrWhiteSpace(Query))
         {
-            Results = await tmdb.SearchAsync(Query.Trim(), cancellationToken);
-            List<int> ids = Results.Select(x => x.Id).ToList();
-            ExistingFilms = await db.Films.Where(x => x.TMDbId != null && ids.Contains(x.TMDbId.Value)).ToDictionaryAsync(x => x.TMDbId!.Value, x => x.FilmId, cancellationToken);
+            return RedirectToPage("/Index");
         }
+        Results = await tmdb.SearchAsync(Query.Trim(), cancellationToken);
+        List<int> ids = [.. Results.Select(x => x.Id)];
+        ExistingFilms = await db.Films.Where(x => x.TMDbId != null && ids.Contains(x.TMDbId.Value)).ToDictionaryAsync(x => x.TMDbId!.Value, x => x.FilmId, cancellationToken);
         return Page();
     }
 

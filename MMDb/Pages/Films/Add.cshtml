@@ -51,10 +51,7 @@
 }
 else
 {
-    <form method="get" class="d-flex gap-2 mb-4" style="max-width: 32rem">
-        <input type="search" name="query" value="@Model.Query" class="form-control" placeholder="Search TMDb for a Film" autofocus />
-        <button type="submit" class="btn btn-secondary">Search</button>
-    </form>
+    <h2 class="h5 mb-3">Results for "@Model.Query"</h2>
 
     @if (!string.IsNullOrWhiteSpace(Model.Query) && Model.Results.Count == 0)
     {

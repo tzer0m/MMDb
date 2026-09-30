@@ -13,9 +13,6 @@
         <button type="submit" class="btn btn-outline-secondary d-flex align-items-center" title="Search" aria-label="Search">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" /></svg>
         </button>
-        <a asp-page="/Films/Add" class="btn btn-secondary d-flex align-items-center" title="Add Film" aria-label="Add Film">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2" /></svg>
-        </a>
     </form>
     <div id="film-paging"></div>
 </div>
@@ -67,7 +64,7 @@
             autoWidth: false,
             pageLength: 100,
             columnDefs: [{ targets: [0, 5], orderable: false }],
-            language: { emptyTable: 'No films yet.', zeroRecords: 'No matching films.' },
+            language: { emptyTable: 'No films yet.', zeroRecords: 'No matching films.', info: '_START_ to _END_ of _TOTAL_', infoEmpty: '0 to 0 of 0', infoFiltered: '(_MAX_)' },
             layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' }
         });
         document.getElementById('film-paging').append(document.querySelector('#films_wrapper .dt-paging'));
@@ -84,6 +81,18 @@
             }
         });
         const searchInput = document.getElementById('film-search-input');
+        const addFilmUrl = '@Url.Page("/Films/Add")';
+        films.on('draw', () => {
+            const query = searchInput.value.trim();
+            const emptyCell = document.querySelector('#films tbody td.dt-empty');
+            if (!emptyCell || !query) {
+                return;
+            }
+            const link = document.createElement('a');
+            link.href = `${addFilmUrl}?query=${encodeURIComponent(query)}`;
+            link.textContent = `Movie not found, add "${query}"?`;
+            emptyCell.replaceChildren(link);
+        });
         searchInput.addEventListener('input', () => films.search(searchInput.value).draw());
         document.getElementById('film-search').addEventListener('submit', event => {
             event.preventDefault();
