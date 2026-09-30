@@ -7,6 +7,15 @@
     ViewData["Title"] = "Films";
 }
 
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        @{ RatingChart("My Ratings", Model.MyRatingCounts); }
+    </div>
+    <div class="col-md-6">
+        @{ RatingChart("Community Ratings", Model.CommunityRatingCounts); }
+    </div>
+</div>
+
 <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
     <form id="film-search" class="input-group flex-grow-1 w-auto">
         <input type="search" id="film-search-input" class="form-control" placeholder="Search Titles" aria-label="Search Titles" />
@@ -104,4 +113,33 @@
             films.search(searchInput.value).draw();
         });
     </script>
+}
+
+@{
+    void RatingChart(string title, int[] counts)
+    {
+        int max = Math.Max(1, counts.Max());
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 card-title">@title</h2>
+                <div class="d-flex align-items-end" style="height: 120px; gap: 2px" role="img" aria-label="@title by rating">
+                    @for (int index = 0; index < counts.Length; index++)
+                    {
+                        int rating = index + 1;
+                        string height = (counts[index] * 100.0 / max).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+                        string barStyle = $"height: {height}%; border-radius: 4px 4px 0 0; {RatingColour.StyleForRating(rating)}";
+                        <div class="flex-fill h-100 d-flex flex-column justify-content-end" style="flex-basis: 0" title="@rating: @counts[index] @(counts[index] == 1 ? "film" : "films")">
+                            <div style="@barStyle"></div>
+                        </div>
+                    }
+                </div>
+                <div class="d-flex border-top pt-1" style="gap: 2px">
+                    @for (int rating = 1; rating <= counts.Length; rating++)
+                    {
+                        <div class="flex-fill text-center small text-muted" style="flex-basis: 0">@rating</div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 }
