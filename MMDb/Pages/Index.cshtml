@@ -45,7 +45,7 @@
                 <td class="text-truncate" style="max-width: 0; width: 100%" title="@film.Title">@film.Title</td>
                 <td>@film.Year</td>
                 <td class="d-none d-md-table-cell text-nowrap">@film.Director</td>
-                <td class="text-center" data-order="@film.Rating"><span class="badge fs-5 text-black" style="background-color: @RatingColour.ForRating(film.Rating)">@film.Rating</span></td>
+                <td class="text-center" data-order="@film.Rating"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.Rating)">@film.Rating</span></td>
                 <td class="text-center"></td>
                 <td class="d-none d-sm-table-cell text-nowrap" data-order="@(film.WatchedOn?.ToString("yyyy-MM-dd") ?? "0000-00-00")">@film.WatchedOn?.ToString("d MMM yyyy")</td>
             </tr>

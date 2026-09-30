@@ -6,9 +6,19 @@ namespace MMDb.Models.TMDb;
 public class TMDbCrewMember
 {
     /// <summary>
+    /// The TMDb person ID.
+    /// </summary>
+    public int Id { get; set; }
+
+    /// <summary>
     /// The crew member's name.
     /// </summary>
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The profile photo path.
+    /// </summary>
+    public string? ProfilePath { get; set; }
 
     /// <summary>
     /// The crew member's job, e.g. Director.

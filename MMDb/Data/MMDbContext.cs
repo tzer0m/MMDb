@@ -15,6 +15,16 @@ public class MMDbContext(DbContextOptions<MMDbContext> options) : DbContext(opti
     public DbSet<Film> Films => Set<Film>();
 
     /// <summary>
+    /// Directors and actors.
+    /// </summary>
+    public DbSet<Person> People => Set<Person>();
+
+    /// <summary>
+    /// Links between films and people.
+    /// </summary>
+    public DbSet<FilmCredit> FilmCredits => Set<FilmCredit>();
+
+    /// <summary>
     /// Configures the entity model.
     /// </summary>
     /// <param name="modelBuilder">The model builder.</param>
@@ -27,5 +37,11 @@ public class MMDbContext(DbContextOptions<MMDbContext> options) : DbContext(opti
         modelBuilder.Entity<Film>().HasIndex(x => x.TMDbId).IsUnique();
         modelBuilder.Entity<Film>().HasIndex(x => x.IMDbId);
         modelBuilder.Entity<Film>().Property(x => x.IMDbId).HasMaxLength(20);
+        modelBuilder.Entity<Person>().Property(x => x.PersonId).ValueGeneratedNever();
+        modelBuilder.Entity<Person>().Property(x => x.Name).HasMaxLength(200);
+        modelBuilder.Entity<FilmCredit>().HasKey(x => new { x.FilmId, x.PersonId, x.Role });
+        modelBuilder.Entity<FilmCredit>().HasOne(x => x.Film).WithMany(x => x.Credits).HasForeignKey(x => x.FilmId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<FilmCredit>().HasOne(x => x.Person).WithMany(x => x.Credits).HasForeignKey(x => x.PersonId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<FilmCredit>().HasIndex(x => new { x.PersonId, x.Role });
     }
 }

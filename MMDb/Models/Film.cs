@@ -123,6 +123,11 @@ public class Film
     public DateTime UpdatedAt { get; set; }
 
     /// <summary>
+    /// The director and cast credits.
+    /// </summary>
+    public List<FilmCredit> Credits { get; set; } = [];
+
+    /// <summary>
     /// The runtime formatted as hours and minutes.
     /// </summary>
     [NotMapped]

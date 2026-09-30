@@ -18,6 +18,17 @@ public static class RatingColour
     }
 
     /// <summary>
+    /// Returns an inline style that sets the background to the rating's colour.
+    /// </summary>
+    /// <param name="rating">The rating.</param>
+    /// <param name="min">The lowest possible rating.</param>
+    /// <param name="max">The highest possible rating.</param>
+    public static string StyleForRating(double rating, double min = 1, double max = 10)
+    {
+        return $"background-color: {ForRating(rating, min, max)}";
+    }
+
+    /// <summary>
     /// Blends between red, amber and dark green according to where the rating sits on the scale.
     /// </summary>
     /// <param name="rating">The rating.</param>
