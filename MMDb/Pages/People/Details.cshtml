@@ -1,0 +1,92 @@
+﻿@page "/person/{id:int}"
+@model MMDb.Pages.People.DetailsModel
+@using Microsoft.Extensions.Options
+@using MMDb.Options
+@inject IOptions<TMDbOptions> TMDbOptions
+@{
+    ViewData["Title"] = Model.Person.Name;
+    string imageBaseUrl = TMDbOptions.Value.ImageBaseUrl;
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-md-2">
+        <div class="ratio rounded overflow-hidden bg-body-secondary" style="--bs-aspect-ratio: 150%">
+            @if (Model.Person.ProfilePath is not null)
+            {
+                <img src="@(imageBaseUrl)w342@(Model.Person.ProfilePath)" alt="@Model.Person.Name" class="object-fit-cover" />
+            }
+        </div>
+    </div>
+    <div class="col-12 col-md-10">
+        <h1 class="mb-1">@Model.Person.Name</h1>
+        <p class="text-muted mb-0">
+            @Model.Films.Count @(Model.Films.Count == 1 ? "film" : "films")
+            @if (Model.AverageMyRating is double averageMyRating)
+            {
+                <text>&middot; avg MR @averageMyRating.ToString("0.0")</text>
+            }
+            @if (Model.AverageCommunityRating is double averageCommunityRating)
+            {
+                <text>&middot; avg CR @averageCommunityRating.ToString("0.0")</text>
+            }
+        </p>
+    </div>
+</div>
+
+<table id="person-films" class="table table-hover align-middle w-100 fs-5">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Title</th>
+            <th>Year</th>
+            <th>Role</th>
+            <th class="text-center" title="My Rating">MR</th>
+            <th class="text-center" title="Community Rating">CR</th>
+            <th class="d-none d-sm-table-cell text-nowrap">Watched</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (Film film in Model.Films)
+        {
+            <tr data-href="@Url.Page("/Films/Details", new { id = film.FilmId })">
+                <td class="p-1">
+                    @if (film.PosterPath is not null)
+                    {
+                        <img src="@(imageBaseUrl)w92@(film.PosterPath)" alt="" class="rounded" width="43" height="64" loading="lazy" />
+                    }
+                </td>
+                <td class="text-truncate" style="max-width: 0; width: 100%" title="@film.Title">@film.Title</td>
+                <td>@film.Year</td>
+                <td class="text-nowrap">@Model.Roles[film.FilmId]</td>
+                <td class="text-center"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.Rating)">@film.Rating</span></td>
+                <td class="text-center">
+                    @if (film.CommunityRating is double communityRating)
+                    {
+                        <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(communityRating)">@communityRating.ToString("0.0")</span>
+                    }
+                </td>
+                <td class="d-none d-sm-table-cell text-nowrap">@film.WatchedOn?.ToString("d MMM yyyy")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <style>
+        #person-films tbody tr[data-href] { cursor: pointer; }
+    </style>
+    <script>
+        document.querySelector('#person-films tbody').addEventListener('click', event => {
+            const row = event.target.closest('tr[data-href]');
+            if (!row) {
+                return;
+            }
+            if (event.ctrlKey || event.metaKey) {
+                window.open(row.dataset.href, '_blank');
+            }
+            else {
+                window.location.href = row.dataset.href;
+            }
+        });
+    </script>
+}

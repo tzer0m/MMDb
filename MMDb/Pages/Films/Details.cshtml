@@ -107,13 +107,15 @@
 @{
     async Task PersonColumn(Person person)
     {
-        <div class="ratio rounded overflow-hidden bg-body-secondary mb-2" style="--bs-aspect-ratio: 150%">
-            @if (person.ProfilePath is not null)
-            {
-                <img src="@(TMDbOptions.Value.ImageBaseUrl)w185@(person.ProfilePath)" alt="@person.Name" class="object-fit-cover" loading="lazy" />
-            }
-        </div>
-        <div class="fw-semibold mb-2">@person.Name</div>
+        <a asp-page="/People/Details" asp-route-id="@person.PersonId" class="d-block text-decoration-none mb-2">
+            <div class="ratio rounded overflow-hidden bg-body-secondary mb-2" style="--bs-aspect-ratio: 150%">
+                @if (person.ProfilePath is not null)
+                {
+                    <img src="@(TMDbOptions.Value.ImageBaseUrl)w185@(person.ProfilePath)" alt="@person.Name" class="object-fit-cover" loading="lazy" />
+                }
+            </div>
+            <div class="fw-semibold">@person.Name</div>
+        </a>
         <div class="list-group list-group-flush small">
             @foreach (Film film in Model.OtherFilms[person.PersonId])
             {
