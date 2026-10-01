@@ -40,9 +40,11 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (Film film in Model.Films)
+        @foreach (Film film in Model.Films.Concat(Model.Unwatched))
         {
-            <tr data-href="@Url.Page("/Films/Details", new { id = film.FilmId })">
+            bool isRated = film.FilmId != 0;
+            string href = isRated ? Url.Page("/Films/Details", new { id = film.FilmId })! : Url.Page("/Films/Preview", new { tmdbId = film.TMDbId })!;
+            <tr data-href="@href">
                 <td class="p-1">
                     @if (film.PosterPath is not null)
                     {
@@ -52,14 +54,23 @@
                 <td class="text-truncate" style="max-width: 0; width: 100%" title="@film.Title">@film.Title</td>
                 <td>@film.Year</td>
                 <td class="d-none d-md-table-cell text-nowrap">@film.Director</td>
-                <td class="text-center" data-order="@film.Rating"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.Rating)">@film.Rating</span></td>
+                <td class="text-center" data-order="@film.Rating">
+                    @if (isRated)
+                    {
+                        <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.Rating)">@film.Rating</span>
+                    }
+                    else
+                    {
+                        <span class="badge fs-5 bg-secondary text-body" title="Not Rated Yet">#</span>
+                    }
+                </td>
                 <td class="text-center" data-order="@(film.CommunityRating ?? -1)">
                     @if (film.CommunityRating is double communityRating)
                     {
                         <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(communityRating)">@communityRating.ToString("0.0")</span>
                     }
                 </td>
-                <td class="d-none d-md-table-cell text-center text-nowrap" data-order="@(film.RatingDelta ?? -99)">@film.RatingDelta?.ToString("+0.0;-0.0;0.0")</td>
+                <td class="d-none d-md-table-cell text-center text-nowrap" data-order="@(isRated ? film.RatingDelta ?? -99 : -99)">@(isRated ? film.RatingDelta?.ToString("+0.0;-0.0;0.0") : "")</td>
                 <td class="d-none d-sm-table-cell text-nowrap" data-order="@(film.WatchedOn?.ToString("yyyy-MM-dd") ?? "0000-00-00")">@film.WatchedOn?.ToString("d MMM yyyy")</td>
             </tr>
         }

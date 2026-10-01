@@ -30,6 +30,11 @@ public class MMDbContext(DbContextOptions<MMDbContext> options) : DbContext(opti
     public DbSet<OMDbCacheEntry> OMDbCache => Set<OMDbCacheEntry>();
 
     /// <summary>
+    /// Films in my Jellyfin library that I have not rated yet.
+    /// </summary>
+    public DbSet<LibraryFilm> LibraryFilms => Set<LibraryFilm>();
+
+    /// <summary>
     /// Configures the entity model.
     /// </summary>
     /// <param name="modelBuilder">The model builder.</param>
@@ -51,5 +56,10 @@ public class MMDbContext(DbContextOptions<MMDbContext> options) : DbContext(opti
         modelBuilder.Entity<FilmCredit>().HasIndex(x => new { x.PersonId, x.Role });
         modelBuilder.Entity<OMDbCacheEntry>().HasKey(x => x.IMDbId);
         modelBuilder.Entity<OMDbCacheEntry>().Property(x => x.IMDbId).HasMaxLength(20);
+        modelBuilder.Entity<LibraryFilm>().HasKey(x => x.TMDbId);
+        modelBuilder.Entity<LibraryFilm>().Property(x => x.TMDbId).ValueGeneratedNever();
+        modelBuilder.Entity<LibraryFilm>().Property(x => x.IMDbId).HasMaxLength(20);
+        modelBuilder.Entity<LibraryFilm>().Property(x => x.Title).HasMaxLength(300);
+        modelBuilder.Entity<LibraryFilm>().Property(x => x.Director).HasMaxLength(200);
     }
 }

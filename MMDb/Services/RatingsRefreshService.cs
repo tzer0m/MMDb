@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using MMDb.Data;
 using MMDb.Models;
 using MMDb.Models.Jellyfin;
+using MMDb.Models.TMDb;
 using MMDb.Options;
 
 namespace MMDb.Services;
@@ -40,8 +41,75 @@ public partial class RatingsRefreshService(IServiceScopeFactory scopeFactory, IO
             {
                 LogRepushFailed(logger, ex);
             }
+            try
+            {
+                await SyncLibraryAsync(stoppingToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                LogLibrarySyncFailed(logger, ex);
+            }
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
+    }
+
+    /// <summary>
+    /// Keeps the list of unrated films in my Jellyfin library up to date, fetching TMDb details for new or stale ones and caching their OMDb ratings.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task SyncLibraryAsync(CancellationToken cancellationToken)
+    {
+        using IServiceScope scope = scopeFactory.CreateScope();
+        MMDbContext db = scope.ServiceProvider.GetRequiredService<MMDbContext>();
+        JellyfinClient jellyfin = scope.ServiceProvider.GetRequiredService<JellyfinClient>();
+        TMDbClient tmdb = scope.ServiceProvider.GetRequiredService<TMDbClient>();
+        OMDbCacheService omdbCache = scope.ServiceProvider.GetRequiredService<OMDbCacheService>();
+        List<JellyfinItem> items = await jellyfin.GetMoviesAsync(cancellationToken);
+        HashSet<int> rated = [.. await db.Films.Where(x => x.TMDbId != null).Select(x => x.TMDbId!.Value).ToListAsync(cancellationToken)];
+        HashSet<int> wanted = [.. items.Select(x => x.TMDbId).OfType<int>().Where(x => !rated.Contains(x))];
+        Dictionary<int, LibraryFilm> existing = await db.LibraryFilms.ToDictionaryAsync(x => x.TMDbId, cancellationToken);
+        db.LibraryFilms.RemoveRange(existing.Values.Where(x => !wanted.Contains(x.TMDbId)));
+        DateTime cutoff = DateTime.UtcNow - options.Value.MaxAge;
+        int fetched = 0;
+        foreach (int tmdbId in wanted.Where(x => !existing.TryGetValue(x, out LibraryFilm? film) || film.UpdatedAt < cutoff))
+        {
+            TMDbMovie? movie;
+            try
+            {
+                movie = await tmdb.GetMovieAsync(tmdbId, cancellationToken);
+            }
+            catch (HttpRequestException ex)
+            {
+                LogLibraryFilmFailed(logger, ex, tmdbId);
+                continue;
+            }
+            if (movie is null)
+            {
+                continue;
+            }
+            if (!existing.TryGetValue(tmdbId, out LibraryFilm? libraryFilm))
+            {
+                libraryFilm = new LibraryFilm { TMDbId = tmdbId };
+                db.LibraryFilms.Add(libraryFilm);
+                existing[tmdbId] = libraryFilm;
+            }
+            List<string> directors = [.. (movie.Credits?.Crew ?? []).Where(x => x.Job == "Director").Select(x => x.Name).Distinct()];
+            libraryFilm.IMDbId = string.IsNullOrWhiteSpace(movie.ImdbId) ? null : movie.ImdbId;
+            libraryFilm.Title = movie.Title;
+            libraryFilm.Year = movie.Year;
+            libraryFilm.Director = directors.Count == 0 ? null : string.Join(", ", directors);
+            libraryFilm.PosterPath = movie.PosterPath;
+            libraryFilm.TMDbRating = movie.VoteCount > 0 ? Math.Round(movie.VoteAverage, 1) : null;
+            libraryFilm.UpdatedAt = DateTime.UtcNow;
+            fetched++;
+        }
+        await db.SaveChangesAsync(cancellationToken);
+        // Cache OMDb ratings a few at a time; the cache only calls OMDb for missing or stale entries and keeps going past failures.
+        foreach (string[] chunk in existing.Values.Where(x => wanted.Contains(x.TMDbId) && x.IMDbId is not null).Select(x => x.IMDbId!).Chunk(10))
+        {
+            await omdbCache.GetManyAsync(chunk, cancellationToken);
+        }
+        LogLibrarySynced(logger, wanted.Count, fetched);
     }
 
     /// <summary>
@@ -154,4 +222,30 @@ public partial class RatingsRefreshService(IServiceScopeFactory scopeFactory, IO
     /// <param name="repushed">The number of films updated in Jellyfin.</param>
     [LoggerMessage(Level = LogLevel.Information, Message = "Re-pushed {Repushed} ratings to Jellyfin.")]
     private static partial void LogRepushed(ILogger logger, int repushed);
+
+    /// <summary>
+    /// Logs that the library sync failed.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    [LoggerMessage(Level = LogLevel.Error, Message = "Jellyfin library sync failed.")]
+    private static partial void LogLibrarySyncFailed(ILogger logger, Exception exception);
+
+    /// <summary>
+    /// Logs that TMDb details could not be fetched for a library film.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    /// <param name="tmdbId">The TMDb movie ID.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not fetch TMDb details for library film {TMDbId}.")]
+    private static partial void LogLibraryFilmFailed(ILogger logger, Exception exception, int tmdbId);
+
+    /// <summary>
+    /// Logs how many unrated library films there are and how many were fetched from TMDb.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="unrated">The number of unrated films in the library.</param>
+    /// <param name="fetched">The number fetched from TMDb this run.</param>
+    [LoggerMessage(Level = LogLevel.Information, Message = "Synced {Unrated} unrated library films, fetching {Fetched} from TMDb.")]
+    private static partial void LogLibrarySynced(ILogger logger, int unrated, int fetched);
 }
