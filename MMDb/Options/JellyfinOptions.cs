@@ -28,5 +28,5 @@ public class JellyfinOptions
     /// <summary>
     /// How long the list of collections and their movies is cached.
     /// </summary>
-    public TimeSpan CollectionsCacheDuration { get; set; } = TimeSpan.FromHours(1);
+    public TimeSpan CollectionsCacheDuration { get; set; } = TimeSpan.FromMinutes(5);
 }
