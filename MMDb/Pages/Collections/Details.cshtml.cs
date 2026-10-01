@@ -36,6 +36,11 @@ public class DetailsModel(MMDbContext db, JellyfinClient jellyfin) : PageModel
     public double? AverageCommunityRating => Films.Any(x => x.CommunityRating is not null) ? Films.Where(x => x.CommunityRating is not null).Average(x => x.CommunityRating!.Value) : null;
 
     /// <summary>
+    /// The average of my rating minus the community rating across the films I have rated that have both.
+    /// </summary>
+    public double? AverageRatingDelta => Films.Any(x => x.FilmId != 0 && x.RatingDelta is not null) ? Films.Where(x => x.FilmId != 0 && x.RatingDelta is not null).Average(x => x.RatingDelta!.Value) : null;
+
+    /// <summary>
     /// Loads the collection from Jellyfin and matches its films to my rated films, then to cached library details.
     /// </summary>
     /// <param name="id">The Jellyfin collection ID.</param>

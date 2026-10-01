@@ -37,6 +37,10 @@
         {
             <span class="badge fs-2 rating-lg border border-secondary" style="min-width: 2.5em" title="Average Community Rating"></span>
         }
+        @if (Model.AverageRatingDelta is double averageDelta)
+        {
+            <span class="badge fs-2 rating-lg border border-secondary text-body d-flex align-items-center" title="Average My Rating minus Community Rating">@averageDelta.ToString("+0.0;-0.0;0.0")</span>
+        }
     </div>
 </div>
 
@@ -49,6 +53,7 @@
             <th class="d-none d-md-table-cell text-nowrap">Director</th>
             <th class="d-none d-md-table-cell text-center" title="My Rating">MR</th>
             <th class="d-none d-md-table-cell text-center" title="Community Rating">CR</th>
+            <th class="d-none d-md-table-cell text-center" title="My Rating minus Community Rating">&Delta;</th>
             <th class="d-none d-md-table-cell text-nowrap">Watched</th>
         </tr>
     </thead>
@@ -84,6 +89,7 @@
                         <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(communityRating)">@communityRating.ToString("0.0")</span>
                     }
                 </td>
+                <td class="d-none d-md-table-cell text-center text-nowrap">@(isRated ? film.RatingDelta?.ToString("+0.0;-0.0;0.0") : "")</td>
                 <td class="d-none d-md-table-cell text-nowrap">@film.WatchedOn?.ToString("d MMM yyyy")</td>
             </tr>
         }
