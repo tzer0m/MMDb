@@ -1,11 +1,7 @@
 ﻿@page "/collection/{id}"
 @model MMDb.Pages.Collections.DetailsModel
-@using Microsoft.Extensions.Options
-@using MMDb.Options
-@inject IOptions<TMDbOptions> TMDbOptions
 @{
     ViewData["Title"] = Model.Name;
-    string imageBaseUrl = TMDbOptions.Value.ImageBaseUrl;
 }
 
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
@@ -64,9 +60,9 @@
             string? href = isRated ? Url.Page("/Films/Details", new { id = film.FilmId }) : film.TMDbId is int tmdbId ? Url.Page("/Films/Preview", new { tmdbId }) : null;
             <tr class="position-relative">
                 <td class="p-1">
-                    @if (film.PosterPath is not null)
+                    @if (await Posters.UrlAsync(film.TMDbId, film.IMDbId, film.PosterPath, 92) is string posterUrl)
                     {
-                        <img src="@(imageBaseUrl)w92@(film.PosterPath)" alt="" class="rounded" width="43" height="64" loading="lazy" />
+                        <img src="@posterUrl" alt="" class="rounded" width="43" height="64" loading="lazy" />
                     }
                 </td>
                 <td style="max-width: 0; width: 100%">

@@ -72,9 +72,9 @@
         {
             <tr class="position-relative">
                 <td class="p-1">
-                    @if (film.PosterPath is not null)
+                    @if (await Posters.UrlAsync(film.TMDbId, film.IMDbId, film.PosterPath, 92) is string posterUrl)
                     {
-                        <img src="@(imageBaseUrl)w92@(film.PosterPath)" alt="" class="rounded" width="43" height="64" loading="lazy" />
+                        <img src="@posterUrl" alt="" class="rounded" width="43" height="64" loading="lazy" />
                     }
                 </td>
                 <td style="max-width: 0; width: 100%">
@@ -128,9 +128,9 @@
                 string href = film.FilmId is int filmId ? Url.Page("/Films/Details", new { id = filmId })! : Url.Page("/Films/Preview", new { tmdbId = film.TMDbId })!;
                 <tr class="position-relative @(film.FilmId is null ? "" : "seen-film")" title="@(film.FilmId is null ? "" : "Seen")">
                     <td class="p-1">
-                        @if (film.PosterPath is not null)
+                        @if (await Posters.UrlAsync(film.TMDbId, null, film.PosterPath, 92) is string posterUrl)
                         {
-                            <img src="@(imageBaseUrl)w92@(film.PosterPath)" alt="" class="rounded" width="43" height="64" loading="lazy" />
+                            <img src="@posterUrl" alt="" class="rounded" width="43" height="64" loading="lazy" />
                         }
                     </td>
                     <td style="max-width: 0; width: 100%">

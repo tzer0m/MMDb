@@ -1,16 +1,13 @@
 ﻿@page "/film/{id:int}/edit"
 @model MMDb.Pages.Films.EditModel
-@using Microsoft.Extensions.Options
-@using MMDb.Options
-@inject IOptions<TMDbOptions> TMDbOptions
 @{
     ViewData["Title"] = $"Edit {Model.Film.Title}";
 }
 
 <div class="d-flex gap-3 mb-4" style="max-width: 48rem">
-    @if (Model.Film.PosterPath is not null)
+    @if (await Posters.UrlAsync(Model.Film.TMDbId, Model.Film.IMDbId, Model.Film.PosterPath, 185) is string posterUrl)
     {
-        <img src="@(TMDbOptions.Value.ImageBaseUrl)w185@(Model.Film.PosterPath)" alt="" class="rounded" style="width: 120px; height: auto" />
+        <img src="@posterUrl" alt="" class="rounded" style="width: 120px; height: auto" />
     }
     <div>
         <h1 class="h4 mb-1">@Model.Film.Title <span class="text-muted fw-normal">@(Model.Film.Year is int year ? $"({year})" : "")</span></h1>

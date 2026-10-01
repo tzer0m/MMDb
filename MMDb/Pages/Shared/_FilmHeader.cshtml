@@ -2,7 +2,6 @@
 @using Microsoft.Extensions.Options
 @using MMDb.Models.Jellyfin
 @using MMDb.Options
-@inject IOptions<TMDbOptions> TMDbOptions
 @inject IOptions<ExternalLinkOptions> ExternalLinks
 @{
     bool isRated = Model.FilmId != 0;
@@ -17,9 +16,9 @@
 <div class="detail-layout">
     <div class="detail-poster">
         <div class="ratio rounded overflow-hidden bg-body-secondary" style="--bs-aspect-ratio: 150%">
-            @if (Model.PosterPath is not null)
+            @if (await Posters.UrlAsync(Model.TMDbId, Model.IMDbId, Model.PosterPath, 342) is string posterUrl)
             {
-                <img src="@(TMDbOptions.Value.ImageBaseUrl)w342@(Model.PosterPath)" alt="@Model.Title poster" class="object-fit-cover" />
+                <img src="@posterUrl" alt="@Model.Title poster" class="object-fit-cover" />
             }
         </div>
     </div>

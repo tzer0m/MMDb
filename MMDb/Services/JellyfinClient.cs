@@ -54,7 +54,7 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options, 
     /// Gets the library list from the memory cache, fetching it if needed.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task<List<JellyfinItem>> GetCachedMoviesAsync(CancellationToken cancellationToken)
+    public async Task<List<JellyfinItem>> GetCachedMoviesAsync(CancellationToken cancellationToken)
     {
         return await cache.GetOrCreateAsync("jellyfin-movies", async entry =>
         {
@@ -143,6 +143,25 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options, 
     {
         List<JellyfinCollection> collections = await GetCollectionsAsync(cancellationToken);
         return [.. collections.Where(x => x.Contains(imdbId, tmdbId))];
+    }
+
+    /// <summary>
+    /// Gets an item's primary image (the poster) at a maximum width, or null if Jellyfin has none.
+    /// </summary>
+    /// <param name="itemId">The Jellyfin item ID.</param>
+    /// <param name="tag">The image tag.</param>
+    /// <param name="width">The maximum width in pixels.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<(byte[] Content, string ContentType)?> GetPrimaryImageAsync(string itemId, string tag, int width, CancellationToken cancellationToken = default)
+    {
+        using HttpRequestMessage request = CreateRequest(HttpMethod.Get, $"Items/{itemId}/Images/Primary?tag={tag}&maxWidth={width}");
+        using HttpResponseMessage response = await http.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return null;
+        }
+        byte[] content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+        return (content, response.Content.Headers.ContentType?.MediaType ?? "image/jpeg");
     }
 
     /// <summary>

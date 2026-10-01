@@ -39,4 +39,14 @@ public class JellyfinItem
     /// The TMDb ID, if known.
     /// </summary>
     public int? TMDbId => int.TryParse(ProviderIds.FirstOrDefault(x => x.Key.Equals("Tmdb", StringComparison.OrdinalIgnoreCase)).Value, out int id) ? id : null;
+
+    /// <summary>
+    /// The image tags by image type, e.g. Primary.
+    /// </summary>
+    public Dictionary<string, string> ImageTags { get; set; } = [];
+
+    /// <summary>
+    /// The tag of the primary image (the poster), if there is one.
+    /// </summary>
+    public string? PrimaryImageTag => ImageTags.GetValueOrDefault("Primary");
 }

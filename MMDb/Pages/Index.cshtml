@@ -1,8 +1,5 @@
 ﻿@page
 @model IndexModel
-@using Microsoft.Extensions.Options
-@using MMDb.Options
-@inject IOptions<TMDbOptions> TMDbOptions
 @{
     ViewData["Title"] = "Films";
 }
@@ -46,9 +43,9 @@
             string href = isRated ? Url.Page("/Films/Details", new { id = film.FilmId })! : Url.Page("/Films/Preview", new { tmdbId = film.TMDbId })!;
             <tr class="position-relative">
                 <td class="p-1">
-                    @if (film.PosterPath is not null)
+                    @if (await Posters.UrlAsync(film.TMDbId, film.IMDbId, film.PosterPath, 92) is string posterUrl)
                     {
-                        <img src="@(TMDbOptions.Value.ImageBaseUrl)w92@(film.PosterPath)" alt="" class="rounded" width="43" height="64" loading="lazy" />
+                        <img src="@posterUrl" alt="" class="rounded" width="43" height="64" loading="lazy" />
                     }
                 </td>
                 <td class="text-truncate" style="max-width: 0; width: 100%" title="@film.Title"><a href="@href" class="stretched-link text-reset text-decoration-none">@film.Title</a></td>
