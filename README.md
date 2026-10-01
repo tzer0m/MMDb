@@ -1,5 +1,7 @@
 # MMDb
 
+[![Deploy](https://github.com/tzer0m/MMDb/actions/workflows/deploy.yml/badge.svg)](https://github.com/tzer0m/MMDb/actions/workflows/deploy.yml)
+
 My Movie Database: a self-hosted site for keeping my film ratings, built with ASP.NET Core Razor Pages on .NET 10.
 
 ## Features
@@ -45,9 +47,12 @@ My Movie Database: a self-hosted site for keeping my film ratings, built with AS
        "ApiKey": ""
      },
      "Jellyfin": {
-       "BaseUrl": "",
        "ApiKey": "",
        "UserId": ""
+     },
+     "Oidc": {
+       "ClientId": "",
+       "ClientSecret": ""
      }
    }
    ```
@@ -60,11 +65,14 @@ Non-secret settings live in `appsettings.json`:
 
 | Section | Purpose |
 |---|---|
+| `Oidc` | Pocket ID authority URL for signing in |
 | `TMDb` | API and image base URLs |
-| `OMDb` | API base URL |
-| `RatingsRefresh` | How often the ratings job runs, how old ratings can get, and how many films to refresh per run |
-| `People` | How long cached person details last before being fetched again |
-| `ExternalLinks` | URL templates for linking a film to TMDb, IMDb, Rotten Tomatoes and Metacritic |
+| `OMDb` | API base URL, and how long cached OMDb ratings last for lookups, previews and library films |
+| `Search` | How many TMDb results the lookup page shows |
+| `RatingsRefresh` | How often the nightly job runs (ratings refresh, Jellyfin rating sync and library sync), how old ratings can get, and how many films to refresh per run |
+| `People` | How long cached person details and TMDb credits last, how many cast members to store and show per film, and how many top rated films (with a minimum vote count) to show under Other Roles |
+| `ExternalLinks` | URL templates for TMDb, IMDb, Rotten Tomatoes, Metacritic, GitHub and SwagBagger links |
+| `Jellyfin` | Server URL, and how long the library list and collections are cached |
 
 ## Credits
 
