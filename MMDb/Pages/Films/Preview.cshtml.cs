@@ -64,6 +64,7 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, OMDb
         }
         Input.WatchedOn = DateOnly.FromDateTime(DateTime.Today);
         ViewData["ShowSwagBagger"] = await SwagBaggerButton.ShouldShowAsync(User, jellyfin, Film, cancellationToken);
+        ViewData["Collections"] = await CollectionLinks.FindAsync(jellyfin, Film, cancellationToken);
         return Page();
     }
 
@@ -89,6 +90,7 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, OMDb
                 return NotFound();
             }
             ViewData["ShowSwagBagger"] = await SwagBaggerButton.ShouldShowAsync(User, jellyfin, Film, cancellationToken);
+            ViewData["Collections"] = await CollectionLinks.FindAsync(jellyfin, Film, cancellationToken);
             return Page();
         }
         Film? film = await BuildFilmAsync(true, cancellationToken);

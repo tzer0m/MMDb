@@ -1,0 +1,128 @@
+﻿@page "/collection/{id}"
+@model MMDb.Pages.Collections.DetailsModel
+@using Microsoft.Extensions.Options
+@using MMDb.Options
+@inject IOptions<TMDbOptions> TMDbOptions
+@{
+    ViewData["Title"] = Model.Name;
+    string imageBaseUrl = TMDbOptions.Value.ImageBaseUrl;
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="mb-1">@Model.Name</h1>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <p class="text-muted mb-0">@Model.Films.Count Films &middot; @Model.Films.Count(x => x.FilmId != 0) Seen</p>
+        }
+        else
+        {
+            <p class="text-muted mb-0">@Model.Films.Count Seen</p>
+        }
+    </div>
+    <div class="d-flex align-items-stretch gap-2">
+        @if (Model.AverageMyRating is double averageMyRating)
+        {
+            <span class="badge fs-2 rating-lg text-black" style="@RatingColour.StyleForRating(averageMyRating)" title="Average My Rating">@averageMyRating.ToString("0.0")</span>
+        }
+        else
+        {
+            <span class="badge fs-2 rating-lg border border-secondary" style="min-width: 2.5em" title="Average My Rating"></span>
+        }
+        @if (Model.AverageCommunityRating is double averageCommunityRating)
+        {
+            <span class="badge fs-2 rating-lg text-black" style="@RatingColour.StyleForRating(averageCommunityRating)" title="Average Community Rating">@averageCommunityRating.ToString("0.0")</span>
+        }
+        else
+        {
+            <span class="badge fs-2 rating-lg border border-secondary" style="min-width: 2.5em" title="Average Community Rating"></span>
+        }
+    </div>
+</div>
+
+<table class="table table-hover align-middle w-100 fs-5 film-table clickable-rows">
+    <thead>
+        <tr>
+            <th class="d-none d-md-table-cell"></th>
+            <th class="d-none d-md-table-cell">Title</th>
+            <th class="d-none d-md-table-cell">Year</th>
+            <th class="d-none d-md-table-cell text-nowrap">Director</th>
+            <th class="d-none d-md-table-cell text-center" title="My Rating">MR</th>
+            <th class="d-none d-md-table-cell text-center" title="Community Rating">CR</th>
+            <th class="d-none d-md-table-cell text-nowrap">Watched</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (Film film in Model.Films)
+        {
+            bool isRated = film.FilmId != 0;
+            string? href = isRated ? Url.Page("/Films/Details", new { id = film.FilmId }) : film.TMDbId is int tmdbId ? Url.Page("/Films/Preview", new { tmdbId }) : null;
+            <tr data-href="@href">
+                <td class="p-1">
+                    @if (film.PosterPath is not null)
+                    {
+                        <img src="@(imageBaseUrl)w92@(film.PosterPath)" alt="" class="rounded" width="43" height="64" loading="lazy" />
+                    }
+                </td>
+                <td style="max-width: 0; width: 100%">
+                    <div class="text-truncate" title="@film.Title">@film.Title</div>
+                    <div class="d-flex d-md-none align-items-center gap-2 mt-1">
+                        <span class="text-truncate text-muted small">@(film.Year is int year ? $"{year} · " : "")@film.Director</span>
+                        @{ MyRating(film, isRated, "ms-auto"); }
+                        @if (film.CommunityRating is double mobileCommunityRating)
+                        {
+                            <span class="badge text-black" style="@RatingColour.StyleForRating(mobileCommunityRating)" title="Community Rating">@mobileCommunityRating.ToString("0.0")</span>
+                        }
+                    </div>
+                </td>
+                <td class="d-none d-md-table-cell">@film.Year</td>
+                <td class="d-none d-md-table-cell text-nowrap">@film.Director</td>
+                <td class="d-none d-md-table-cell text-center">@{ MyRating(film, isRated, "fs-5"); }</td>
+                <td class="d-none d-md-table-cell text-center">
+                    @if (film.CommunityRating is double communityRating)
+                    {
+                        <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(communityRating)">@communityRating.ToString("0.0")</span>
+                    }
+                </td>
+                <td class="d-none d-md-table-cell text-nowrap">@film.WatchedOn?.ToString("d MMM yyyy")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@{
+    void MyRating(Film film, bool isRated, string extraClass)
+    {
+        if (isRated)
+        {
+            <span class="badge text-black @extraClass" style="@RatingColour.StyleForRating(film.Rating)" title="My Rating">@film.Rating</span>
+        }
+        else
+        {
+            <span class="badge bg-secondary text-body @extraClass" title="Not Rated Yet">#</span>
+        }
+    }
+}
+
+@section Styles {
+    <style>
+        .clickable-rows tbody tr[data-href] { cursor: pointer; }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.clickable-rows tbody').forEach(body => body.addEventListener('click', event => {
+            const row = event.target.closest('tr[data-href]');
+            if (!row) {
+                return;
+            }
+            if (event.ctrlKey || event.metaKey) {
+                window.open(row.dataset.href, '_blank');
+            }
+            else {
+                window.location.href = row.dataset.href;
+            }
+        }));
+    </script>
+}

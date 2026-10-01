@@ -115,7 +115,43 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options, 
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<List<JellyfinItem>> GetMoviesAsync(CancellationToken cancellationToken = default)
     {
-        string path = $"Items?userId={options.Value.UserId}&includeItemTypes=Movie&recursive=true&fields=ProviderIds";
+        return await GetItemsAsync($"Items?userId={options.Value.UserId}&includeItemTypes=Movie&recursive=true&fields=ProviderIds", cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets every collection with its movies, using a cached copy.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<List<JellyfinCollection>> GetCollectionsAsync(CancellationToken cancellationToken = default)
+    {
+        return await cache.GetOrCreateAsync("jellyfin-collections", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = options.Value.CollectionsCacheDuration;
+            List<JellyfinItem> boxSets = await GetItemsAsync($"Items?userId={options.Value.UserId}&includeItemTypes=BoxSet&recursive=true", cancellationToken);
+            List<JellyfinItem>[] movies = await Task.WhenAll(boxSets.Select(x => GetItemsAsync($"Items?userId={options.Value.UserId}&parentId={x.Id}&includeItemTypes=Movie&fields=ProviderIds", cancellationToken)));
+            return boxSets.Zip(movies).Select(x => new JellyfinCollection { Id = x.First.Id, Name = x.First.Name, Movies = x.Second }).OrderBy(x => x.Name).ToList();
+        }) ?? [];
+    }
+
+    /// <summary>
+    /// Gets the collections a film is in, by IMDb ID or TMDb ID.
+    /// </summary>
+    /// <param name="imdbId">The IMDb ID.</param>
+    /// <param name="tmdbId">The TMDb ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<List<JellyfinCollection>> FindCollectionsAsync(string? imdbId, int? tmdbId, CancellationToken cancellationToken = default)
+    {
+        List<JellyfinCollection> collections = await GetCollectionsAsync(cancellationToken);
+        return [.. collections.Where(x => x.Contains(imdbId, tmdbId))];
+    }
+
+    /// <summary>
+    /// Gets items from a Jellyfin items endpoint.
+    /// </summary>
+    /// <param name="path">The path and query relative to the server base URL.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task<List<JellyfinItem>> GetItemsAsync(string path, CancellationToken cancellationToken)
+    {
         using HttpRequestMessage request = CreateRequest(HttpMethod.Get, path);
         using HttpResponseMessage response = await http.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();

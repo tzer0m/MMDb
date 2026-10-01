@@ -41,6 +41,7 @@ public class DetailsModel(MMDbContext db, FilmPeopleService filmPeople, Jellyfin
         Film = film;
         People = await filmPeople.LoadAsync(film.Credits, film.FilmId, cancellationToken);
         ViewData["ShowSwagBagger"] = await SwagBaggerButton.ShouldShowAsync(User, jellyfin, film, cancellationToken);
+        ViewData["Collections"] = await CollectionLinks.FindAsync(jellyfin, film, cancellationToken);
         return Page();
     }
 }

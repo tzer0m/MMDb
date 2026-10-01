@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using MMDb.Data;
 using MMDb.Helpers;
 using MMDb.Models;
+using MMDb.Models.Jellyfin;
 using MMDb.Models.TMDb;
 using MMDb.Options;
 using MMDb.Services;
@@ -43,6 +44,21 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
     /// Their top rated films on TMDb, including ones I have seen.
     /// </summary>
     public List<TopRatedFilm> TopRated { get; set; } = [];
+
+    /// <summary>
+    /// Every Jellyfin collection, for the collection icons, or empty if Jellyfin can't be reached.
+    /// </summary>
+    public List<JellyfinCollection> Collections { get; set; } = [];
+
+    /// <summary>
+    /// Gets the collections a film is in, by IMDb ID or TMDb ID.
+    /// </summary>
+    /// <param name="imdbId">The IMDb ID.</param>
+    /// <param name="tmdbId">The TMDb ID.</param>
+    public List<JellyfinCollection> CollectionsFor(string? imdbId, int? tmdbId)
+    {
+        return [.. Collections.Where(x => x.Contains(imdbId, tmdbId))];
+    }
 
     /// <summary>
     /// My average rating across their films.
@@ -157,6 +173,14 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
         }
         Films = [.. films.OrderBy(x => x.Year ?? int.MaxValue).ThenBy(x => x.Title)];
         TopRated = await LoadTopRatedAsync(tmdbCredits, cancellationToken);
+        try
+        {
+            Collections = await jellyfin.GetCollectionsAsync(cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            LogLibraryFailed(logger, ex);
+        }
         return Page();
     }
 

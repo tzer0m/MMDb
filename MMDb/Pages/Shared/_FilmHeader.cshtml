@@ -1,5 +1,6 @@
 ﻿@model Film
 @using Microsoft.Extensions.Options
+@using MMDb.Models.Jellyfin
 @using MMDb.Options
 @inject IOptions<TMDbOptions> TMDbOptions
 @inject IOptions<ExternalLinkOptions> ExternalLinks
@@ -39,6 +40,18 @@
                 }
                 @Model.WatchedOn?.ToString("d MMMM yyyy")
             </p>
+            @if (ViewData["Collections"] is List<JellyfinCollection> collections && collections.Count > 0)
+            {
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                    @foreach (JellyfinCollection collection in collections)
+                    {
+                        <a asp-page="/Collections/Details" asp-route-id="@collection.Id" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2" title="Collection">
+                            <partial name="_CollectionIcon" />
+                            <span class="text-body">@collection.Name</span>
+                        </a>
+                    }
+                </div>
+            }
         </div>
         <div class="d-flex align-items-stretch gap-2">
             @if (isRated)
