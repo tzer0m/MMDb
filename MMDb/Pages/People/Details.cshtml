@@ -55,7 +55,7 @@
 </div>
 
 <h2 class="h4 mt-4">Seen In</h2>
-<table id="person-films" class="table table-hover align-middle w-100 fs-5 film-table clickable-rows">
+<table id="person-films" class="table table-hover align-middle w-100 fs-5 film-table">
     <thead>
         <tr>
             <th class="d-none d-md-table-cell"></th>
@@ -70,7 +70,7 @@
     <tbody>
         @foreach (Film film in Model.Films)
         {
-            <tr data-href="@Url.Page("/Films/Details", new { id = film.FilmId })">
+            <tr class="position-relative">
                 <td class="p-1">
                     @if (film.PosterPath is not null)
                     {
@@ -79,7 +79,7 @@
                 </td>
                 <td style="max-width: 0; width: 100%">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="text-truncate" title="@film.Title">@film.Title</span>
+                        <span class="text-truncate" title="@film.Title"><a asp-page="/Films/Details" asp-route-id="@film.FilmId" class="stretched-link text-reset text-decoration-none">@film.Title</a></span>
                         @foreach (MMDb.Models.Jellyfin.JellyfinCollection collection in Model.CollectionsFor(film.IMDbId, film.TMDbId))
                         {
                             <partial name="_CollectionLink" model="collection" />
@@ -112,7 +112,7 @@
 @if (Model.TopRated.Count > 0)
 {
     <h2 class="h4 mt-4">Other Roles</h2>
-    <table class="table table-hover align-middle w-100 fs-5 film-table clickable-rows">
+    <table class="table table-hover align-middle w-100 fs-5 film-table">
         <thead>
             <tr>
                 <th class="d-none d-md-table-cell"></th>
@@ -126,7 +126,7 @@
             @foreach (TopRatedFilm film in Model.TopRated)
             {
                 string href = film.FilmId is int filmId ? Url.Page("/Films/Details", new { id = filmId })! : Url.Page("/Films/Preview", new { tmdbId = film.TMDbId })!;
-                <tr data-href="@href" class="@(film.FilmId is null ? "" : "seen-film")" title="@(film.FilmId is null ? "" : "Seen")">
+                <tr class="position-relative @(film.FilmId is null ? "" : "seen-film")" title="@(film.FilmId is null ? "" : "Seen")">
                     <td class="p-1">
                         @if (film.PosterPath is not null)
                         {
@@ -135,7 +135,7 @@
                     </td>
                     <td style="max-width: 0; width: 100%">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="text-truncate" title="@film.Title">@film.Title</span>
+                            <span class="text-truncate" title="@film.Title"><a href="@href" class="stretched-link text-reset text-decoration-none">@film.Title</a></span>
                             @if (film.InLibrary)
                             {
                                 <partial name="_LibraryIcon" />
@@ -165,28 +165,4 @@
             }
         </tbody>
     </table>
-}
-
-@section Styles {
-    <style>
-        .clickable-rows tbody tr[data-href] { cursor: pointer; }
-    </style>
-}
-
-@section Scripts {
-    <script>
-        document.querySelectorAll('.clickable-rows tbody').forEach(body => body.addEventListener('click', event => {
-            const row = event.target.closest('tr[data-href]');
-            // Links inside a row, like the collection icons, go to their own page.
-            if (!row || event.target.closest('a')) {
-                return;
-            }
-            if (event.ctrlKey || event.metaKey) {
-                window.open(row.dataset.href, '_blank');
-            }
-            else {
-                window.location.href = row.dataset.href;
-            }
-        }));
-    </script>
 }

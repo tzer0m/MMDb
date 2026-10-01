@@ -44,14 +44,14 @@
         {
             bool isRated = film.FilmId != 0;
             string href = isRated ? Url.Page("/Films/Details", new { id = film.FilmId })! : Url.Page("/Films/Preview", new { tmdbId = film.TMDbId })!;
-            <tr data-href="@href">
+            <tr class="position-relative">
                 <td class="p-1">
                     @if (film.PosterPath is not null)
                     {
                         <img src="@(TMDbOptions.Value.ImageBaseUrl)w92@(film.PosterPath)" alt="" class="rounded" width="43" height="64" loading="lazy" />
                     }
                 </td>
-                <td class="text-truncate" style="max-width: 0; width: 100%" title="@film.Title">@film.Title</td>
+                <td class="text-truncate" style="max-width: 0; width: 100%" title="@film.Title"><a href="@href" class="stretched-link text-reset text-decoration-none">@film.Title</a></td>
                 <td>@film.Year</td>
                 <td class="d-none d-md-table-cell text-nowrap">@film.Director</td>
                 <td class="text-center" data-order="@film.Rating">
@@ -81,7 +81,6 @@
     <link rel="stylesheet" href="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.css" />
     <style>
         #film-paging ul.pagination { margin: 0; }
-        #films tbody tr[data-href] { cursor: pointer; }
     </style>
 }
 
@@ -98,18 +97,6 @@
             layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' }
         });
         document.getElementById('film-paging').append(document.querySelector('#films_wrapper .dt-paging'));
-        document.querySelector('#films tbody').addEventListener('click', event => {
-            const row = event.target.closest('tr[data-href]');
-            if (!row) {
-                return;
-            }
-            if (event.ctrlKey || event.metaKey) {
-                window.open(row.dataset.href, '_blank');
-            }
-            else {
-                window.location.href = row.dataset.href;
-            }
-        });
         const searchInput = document.getElementById('film-search-input');
         // The search button looks the current search up on TMDb.
         document.getElementById('film-lookup').addEventListener('click', event => {

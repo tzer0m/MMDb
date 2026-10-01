@@ -44,7 +44,7 @@
     </div>
 </div>
 
-<table class="table table-hover align-middle w-100 fs-5 film-table clickable-rows">
+<table class="table table-hover align-middle w-100 fs-5 film-table">
     <thead>
         <tr>
             <th class="d-none d-md-table-cell"></th>
@@ -62,7 +62,7 @@
         {
             bool isRated = film.FilmId != 0;
             string? href = isRated ? Url.Page("/Films/Details", new { id = film.FilmId }) : film.TMDbId is int tmdbId ? Url.Page("/Films/Preview", new { tmdbId }) : null;
-            <tr data-href="@href">
+            <tr class="position-relative">
                 <td class="p-1">
                     @if (film.PosterPath is not null)
                     {
@@ -70,7 +70,16 @@
                     }
                 </td>
                 <td style="max-width: 0; width: 100%">
-                    <div class="text-truncate" title="@film.Title">@film.Title</div>
+                    <div class="text-truncate" title="@film.Title">
+                        @if (href is not null)
+                        {
+                            <a href="@href" class="stretched-link text-reset text-decoration-none">@film.Title</a>
+                        }
+                        else
+                        {
+                            @film.Title
+                        }
+                    </div>
                     <div class="d-flex d-md-none align-items-center gap-2 mt-1">
                         <span class="text-truncate text-muted small">@(film.Year is int year ? $"{year} · " : "")@film.Director</span>
                         @{ MyRating(film, isRated, "ms-auto"); }
@@ -108,27 +117,4 @@
             <span class="badge bg-secondary text-body @extraClass" title="Not Rated Yet">#</span>
         }
     }
-}
-
-@section Styles {
-    <style>
-        .clickable-rows tbody tr[data-href] { cursor: pointer; }
-    </style>
-}
-
-@section Scripts {
-    <script>
-        document.querySelectorAll('.clickable-rows tbody').forEach(body => body.addEventListener('click', event => {
-            const row = event.target.closest('tr[data-href]');
-            if (!row) {
-                return;
-            }
-            if (event.ctrlKey || event.metaKey) {
-                window.open(row.dataset.href, '_blank');
-            }
-            else {
-                window.location.href = row.dataset.href;
-            }
-        }));
-    </script>
 }

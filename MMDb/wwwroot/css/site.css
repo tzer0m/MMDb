@@ -87,3 +87,9 @@
   opacity: 0.3;
   filter: grayscale(1);
 }
+
+/* Links inside a row with a stretched title link, like the collection icons, sit above it so they stay clickable. */
+.collection-link {
+  position: relative;
+  z-index: 2;
+}

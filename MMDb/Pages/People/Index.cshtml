@@ -44,7 +44,7 @@
     <tbody>
         @foreach (TalentSummary person in Model.Talent)
         {
-            <tr data-href="@Url.Page("/People/Details", new { id = person.PersonId })">
+            <tr class="position-relative">
                 <td class="p-1">
                     @if (person.ProfilePath is not null)
                     {
@@ -52,7 +52,7 @@
                     }
                 </td>
                 <td style="max-width: 0; width: 100%" data-order="@person.Name">
-                    <div class="text-truncate" title="@person.Name">@person.Name</div>
+                    <div class="text-truncate" title="@person.Name"><a asp-page="/People/Details" asp-route-id="@person.PersonId" class="stretched-link text-reset text-decoration-none">@person.Name</a></div>
                     <div class="d-flex d-md-none align-items-center gap-2 mt-1">
                         <span class="text-truncate text-muted small">@person.FilmCount @(person.FilmCount == 1 ? "film" : "films") &middot; @person.Roles</span>
                         <span class="badge text-black ms-auto" style="@RatingColour.StyleForRating(person.AverageMyRating)" title="Average My Rating">@person.AverageMyRating.ToString("0.0")</span>
@@ -80,7 +80,6 @@
     <link rel="stylesheet" href="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.css" />
     <style>
         #talent-paging ul.pagination { margin: 0; }
-        #talent tbody tr[data-href] { cursor: pointer; }
     </style>
 }
 
@@ -98,18 +97,6 @@
             layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' }
         });
         document.getElementById('talent-paging').append(document.querySelector('#talent_wrapper .dt-paging'));
-        document.querySelector('#talent tbody').addEventListener('click', event => {
-            const row = event.target.closest('tr[data-href]');
-            if (!row) {
-                return;
-            }
-            if (event.ctrlKey || event.metaKey) {
-                window.open(row.dataset.href, '_blank');
-            }
-            else {
-                window.location.href = row.dataset.href;
-            }
-        });
         const roleFilter = document.getElementById('talent-role');
         const searchInput = document.getElementById('talent-search-input');
         // Apply every filter from the current control values, including ones the browser restores when navigating back.
