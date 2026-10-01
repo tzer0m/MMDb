@@ -93,3 +93,8 @@
   position: relative;
   z-index: 2;
 }
+
+/* Lets a flex item shrink below its content width, so long titles wrap instead of pushing the ratings onto a new line. */
+.min-w-0 {
+  min-width: 0;
+}
