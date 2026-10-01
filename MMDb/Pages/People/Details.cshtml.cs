@@ -30,7 +30,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDb
     public Person Person { get; set; } = null!;
 
     /// <summary>
-    /// Their films I have rated, oldest first.
+    /// Their films I have rated, oldest first, from both the stored cast lists and their full TMDb credits.
     /// </summary>
     public List<Film> Films { get; set; } = [];
 
@@ -139,23 +139,37 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDb
         }
         Person = person;
         List<FilmCredit> credits = await db.FilmCredits.AsNoTracking().Include(x => x.Film).Where(x => x.PersonId == id).ToListAsync(cancellationToken);
-        Films = [.. credits.Select(x => x.Film).DistinctBy(x => x.FilmId).OrderBy(x => x.Year ?? int.MaxValue).ThenBy(x => x.Title)];
-        TopRated = await LoadTopRatedAsync(id, cancellationToken);
+        List<Film> films = [.. credits.Select(x => x.Film).DistinctBy(x => x.FilmId)];
         Roles = credits.GroupBy(x => x.FilmId).ToDictionary(x => x.Key, x => string.Join(", ", x.OrderBy(c => c.Role).Select(c => c.Role == CreditRole.Director ? "Director" : c.Character ?? "Cast")));
+        TMDbPersonCredits? tmdbCredits = await GetCreditsAsync(id, cancellationToken);
+        if (tmdbCredits is not null)
+        {
+            // Films I have rated where they are billed below the stored cast list, found from their full TMDb credits.
+            List<TMDbPersonCredit> all = [.. tmdbCredits.Cast, .. tmdbCredits.Crew.Where(x => x.Job == "Director")];
+            List<int> tmdbIds = [.. all.Select(x => x.Id).Distinct()];
+            List<int> knownIds = [.. films.Select(x => x.FilmId)];
+            List<Film> extra = await db.Films.AsNoTracking().Where(x => x.TMDbId != null && tmdbIds.Contains(x.TMDbId.Value) && !knownIds.Contains(x.FilmId)).ToListAsync(cancellationToken);
+            foreach (Film film in extra)
+            {
+                Roles[film.FilmId] = DescribeRole(all.Where(x => x.Id == film.TMDbId));
+            }
+            films.AddRange(extra);
+        }
+        Films = [.. films.OrderBy(x => x.Year ?? int.MaxValue).ThenBy(x => x.Title)];
+        TopRated = await LoadTopRatedAsync(tmdbCredits, cancellationToken);
         return Page();
     }
 
     /// <summary>
-    /// Loads a person's top rated films from their cached TMDb credits, marking the ones I have rated and working out community ratings, sorted by community rating.
+    /// Gets a person's TMDb film credits from the memory cache, fetching them if needed, or null if TMDb fails.
     /// </summary>
     /// <param name="personId">The TMDb person ID.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task<List<TopRatedFilm>> LoadTopRatedAsync(int personId, CancellationToken cancellationToken)
+    private async Task<TMDbPersonCredits?> GetCreditsAsync(int personId, CancellationToken cancellationToken)
     {
-        TMDbPersonCredits? credits;
         try
         {
-            credits = await cache.GetOrCreateAsync($"person-credits-{personId}", async entry =>
+            return await cache.GetOrCreateAsync($"person-credits-{personId}", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = options.Value.CreditsCacheDuration;
                 return await tmdb.GetPersonMovieCreditsAsync(personId, cancellationToken);
@@ -164,14 +178,32 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDb
         catch (HttpRequestException ex)
         {
             LogCreditsFailed(logger, ex, personId);
-            return [];
+            return null;
         }
+    }
+
+    /// <summary>
+    /// Describes a person's role on a film from their TMDb credits: Director, the character they played, or both.
+    /// </summary>
+    /// <param name="credits">Their TMDb credits for one film.</param>
+    private static string DescribeRole(IEnumerable<TMDbPersonCredit> credits)
+    {
+        return string.Join(", ", credits.OrderBy(x => x.Job == "Director" ? 0 : 1).Select(x => x.Job == "Director" ? "Director" : CharacterName.Clean(x.Character) ?? "Cast").Distinct());
+    }
+
+    /// <summary>
+    /// Loads a person's top rated films from their cached TMDb credits, marking the ones I have rated and working out community ratings, sorted by community rating.
+    /// </summary>
+    /// <param name="credits">Their TMDb film credits, or null if they could not be loaded.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task<List<TopRatedFilm>> LoadTopRatedAsync(TMDbPersonCredits? credits, CancellationToken cancellationToken)
+    {
         if (credits is null)
         {
             return [];
         }
         List<TMDbPersonCredit> all = [.. credits.Cast, .. credits.Crew.Where(x => x.Job == "Director")];
-        List<TopRatedFilm> topRated = [.. all.Where(x => x.VoteCount >= options.Value.TopRatedMinVotes).GroupBy(x => x.Id).Select(x => new TopRatedFilm { TMDbId = x.Key, Title = x.First().Title, Year = x.First().Year, PosterPath = x.First().PosterPath, TMDbRating = Math.Round(x.First().VoteAverage, 1), Role = string.Join(", ", x.OrderBy(c => c.Job == "Director" ? 0 : 1).Select(c => c.Job == "Director" ? "Director" : CharacterName.Clean(c.Character) ?? "Cast").Distinct()) }).OrderByDescending(x => x.TMDbRating).ThenBy(x => x.Title).Take(options.Value.TopRatedCount)];
+        List<TopRatedFilm> topRated = [.. all.Where(x => x.VoteCount >= options.Value.TopRatedMinVotes).GroupBy(x => x.Id).Select(x => new TopRatedFilm { TMDbId = x.Key, Title = x.First().Title, Year = x.First().Year, PosterPath = x.First().PosterPath, TMDbRating = Math.Round(x.First().VoteAverage, 1), Role = DescribeRole(x) }).OrderByDescending(x => x.TMDbRating).ThenBy(x => x.Title).Take(options.Value.TopRatedCount)];
         List<int> tmdbIds = [.. topRated.Select(x => x.TMDbId)];
         Dictionary<int, Film> seen = await db.Films.AsNoTracking().Where(x => x.TMDbId != null && tmdbIds.Contains(x.TMDbId.Value)).ToDictionaryAsync(x => x.TMDbId!.Value, cancellationToken);
         TMDbMovie?[] details = await Task.WhenAll(topRated.Where(x => !seen.ContainsKey(x.TMDbId)).Select(x => TryGetMovieAsync(x.TMDbId, cancellationToken)));
