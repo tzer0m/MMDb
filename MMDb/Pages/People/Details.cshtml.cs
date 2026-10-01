@@ -71,6 +71,11 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
     public double? AverageCommunityRating => Films.Any(x => x.CommunityRating is not null) ? Films.Where(x => x.CommunityRating is not null).Average(x => x.CommunityRating!.Value) : null;
 
     /// <summary>
+    /// The average of my rating minus the community rating across their films that have both.
+    /// </summary>
+    public double? AverageRatingDelta => Films.Any(x => x.RatingDelta is not null) ? Films.Where(x => x.RatingDelta is not null).Average(x => x.RatingDelta!.Value) : null;
+
+    /// <summary>
     /// Their birth and death dates with age, and birthplace, e.g. 3 March 1965 (61) · London, England.
     /// </summary>
     public string BirthLine
