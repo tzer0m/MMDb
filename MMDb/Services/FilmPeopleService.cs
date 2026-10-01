@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using MMDb.Data;
 using MMDb.Models;
+using MMDb.Options;
 
 namespace MMDb.Services;
 
@@ -8,10 +10,11 @@ namespace MMDb.Services;
 /// Builds the director and cast section shown on film pages and previews.
 /// </summary>
 /// <param name="db">The database context.</param>
-public class FilmPeopleService(MMDbContext db)
+/// <param name="options">The people options.</param>
+public class FilmPeopleService(MMDbContext db, IOptions<PeopleOptions> options)
 {
     /// <summary>
-    /// Picks the director and top five cast from a film's credits and loads my other rated films for each.
+    /// Picks the director and top-billed cast from a film's credits and loads my other rated films for each.
     /// </summary>
     /// <param name="credits">The film's credits, with people loaded.</param>
     /// <param name="excludeFilmId">The film to leave out of each person's other films, or 0 for a film not yet in MMDb.</param>
@@ -22,7 +25,7 @@ public class FilmPeopleService(MMDbContext db)
         FilmPeople people = new()
         {
             Director = creditList.Where(x => x.Role == CreditRole.Director).OrderBy(x => x.Order).Select(x => x.Person).FirstOrDefault(),
-            Cast = [.. creditList.Where(x => x.Role == CreditRole.Cast).OrderBy(x => x.Order).Take(5).Select(x => x.Person)],
+            Cast = [.. creditList.Where(x => x.Role == CreditRole.Cast).OrderBy(x => x.Order).Take(options.Value.CastCount).Select(x => x.Person)],
             Characters = creditList.Where(x => x.Role == CreditRole.Cast && x.Character != null).GroupBy(x => x.PersonId).ToDictionary(x => x.Key, x => x.First().Character!)
         };
         List<int> personIds = [.. people.Cast.Select(x => x.PersonId)];
