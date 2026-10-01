@@ -17,9 +17,10 @@ namespace MMDb.Pages.Films;
 /// <param name="db">The database context.</param>
 /// <param name="tmdb">The TMDb client.</param>
 /// <param name="omdbCache">The cached OMDb ratings.</param>
+/// <param name="jellyfin">The Jellyfin client, for library flags.</param>
 /// <param name="options">The search options.</param>
 /// <param name="logger">The logger.</param>
-public partial class SearchModel(MMDbContext db, TMDbClient tmdb, OMDbCacheService omdbCache, IOptions<SearchOptions> options, ILogger<SearchModel> logger) : PageModel
+public partial class SearchModel(MMDbContext db, TMDbClient tmdb, OMDbCacheService omdbCache, JellyfinClient jellyfin, IOptions<SearchOptions> options, ILogger<SearchModel> logger) : PageModel
 {
     /// <summary>
     /// The title to search TMDb for.
@@ -53,6 +54,11 @@ public partial class SearchModel(MMDbContext db, TMDbClient tmdb, OMDbCacheServi
     public Dictionary<int, string> RatingSources { get; set; } = [];
 
     /// <summary>
+    /// The TMDb IDs of films in my Jellyfin library, for the library flag.
+    /// </summary>
+    public HashSet<int> Library { get; set; } = [];
+
+    /// <summary>
     /// Searches TMDb when a query is given, otherwise shows just the search box.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -67,6 +73,14 @@ public partial class SearchModel(MMDbContext db, TMDbClient tmdb, OMDbCacheServi
         TMDbMovie?[] details = await Task.WhenAll(ids.Select(x => TryGetMovieAsync(x, cancellationToken)));
         Directors = details.OfType<TMDbMovie>().ToDictionary(x => x.Id, x => string.Join(", ", (x.Credits?.Crew ?? []).Where(c => c.Job == "Director").Select(c => c.Name).Distinct()));
         ExistingFilms = await db.Films.Where(x => x.TMDbId != null && ids.Contains(x.TMDbId.Value)).AsNoTracking().ToDictionaryAsync(x => x.TMDbId!.Value, cancellationToken);
+        try
+        {
+            Library = await jellyfin.GetLibraryTMDbIdsAsync(cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            LogLibraryFailed(logger, ex);
+        }
         Dictionary<int, TMDbMovie> movies = details.OfType<TMDbMovie>().ToDictionary(x => x.Id);
         Dictionary<string, OMDbCacheEntry> ratings = await omdbCache.GetManyAsync(movies.Values.Where(x => !ExistingFilms.ContainsKey(x.Id) && !string.IsNullOrWhiteSpace(x.ImdbId)).Select(x => x.ImdbId!), cancellationToken);
         foreach (TMDbSearchResult result in Results)
@@ -128,4 +142,12 @@ public partial class SearchModel(MMDbContext db, TMDbClient tmdb, OMDbCacheServi
     /// <param name="tmdbId">The TMDb movie ID.</param>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not load TMDb details for {TMDbId}.")]
     private static partial void LogDetailsFailed(ILogger logger, Exception exception, int tmdbId);
+
+    /// <summary>
+    /// Logs that the Jellyfin library could not be loaded, so no library flags are shown.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not load the Jellyfin library; showing no library flags.")]
+    private static partial void LogLibraryFailed(ILogger logger, Exception exception);
 }

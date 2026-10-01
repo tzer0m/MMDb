@@ -19,9 +19,10 @@ namespace MMDb.Pages.People;
 /// <param name="filmPeople">The film people service, for cached TMDb credits.</param>
 /// <param name="tmdb">The TMDb client.</param>
 /// <param name="omdbCache">The cached OMDb ratings.</param>
+/// <param name="jellyfin">The Jellyfin client, for library flags.</param>
 /// <param name="options">The people options.</param>
 /// <param name="logger">The logger.</param>
-public partial class DetailsModel(MMDbContext db, FilmDataService filmData, FilmPeopleService filmPeople, TMDbClient tmdb, OMDbCacheService omdbCache, IOptions<PeopleOptions> options, ILogger<DetailsModel> logger) : PageModel
+public partial class DetailsModel(MMDbContext db, FilmDataService filmData, FilmPeopleService filmPeople, TMDbClient tmdb, OMDbCacheService omdbCache, JellyfinClient jellyfin, IOptions<PeopleOptions> options, ILogger<DetailsModel> logger) : PageModel
 {
     /// <summary>
     /// The person being displayed.
@@ -186,8 +187,10 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
         TMDbMovie?[] details = await Task.WhenAll(topRated.Where(x => !seen.ContainsKey(x.TMDbId)).Select(x => TryGetMovieAsync(x.TMDbId, cancellationToken)));
         Dictionary<int, string> imdbIds = details.OfType<TMDbMovie>().Where(x => !string.IsNullOrWhiteSpace(x.ImdbId)).ToDictionary(x => x.Id, x => x.ImdbId!);
         Dictionary<string, OMDbCacheEntry> ratings = await omdbCache.GetManyAsync(imdbIds.Values, cancellationToken);
+        HashSet<int> library = await GetLibraryAsync(cancellationToken);
         foreach (TopRatedFilm film in topRated)
         {
+            film.InLibrary = library.Contains(film.TMDbId);
             if (seen.TryGetValue(film.TMDbId, out Film? rated))
             {
                 film.FilmId = rated.FilmId;
@@ -215,6 +218,31 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
         film.CommunityRating = CommunityRatingCalculator.Calculate(tmdbRating, imdbRating, rottenTomatoes, metacritic);
         film.RatingSources = CommunityRatingCalculator.Describe(tmdbRating, imdbRating, rottenTomatoes, metacritic);
     }
+
+    /// <summary>
+    /// Gets the TMDb IDs in my Jellyfin library, or an empty set if Jellyfin can't be reached.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task<HashSet<int>> GetLibraryAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await jellyfin.GetLibraryTMDbIdsAsync(cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            LogLibraryFailed(logger, ex);
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Logs that the Jellyfin library could not be loaded, so no library flags are shown.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not load the Jellyfin library; showing no library flags.")]
+    private static partial void LogLibraryFailed(ILogger logger, Exception exception);
 
     /// <summary>
     /// Gets a movie's details from TMDb for its IMDb ID, returning null instead of throwing if the request fails.

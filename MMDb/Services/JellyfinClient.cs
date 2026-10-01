@@ -36,12 +36,31 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options, 
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<bool> IsInLibraryAsync(string? imdbId, int? tmdbId, CancellationToken cancellationToken = default)
     {
-        List<JellyfinItem> movies = await cache.GetOrCreateAsync("jellyfin-movies", async entry =>
+        List<JellyfinItem> movies = await GetCachedMoviesAsync(cancellationToken);
+        return Match(movies, imdbId, tmdbId) is not null;
+    }
+
+    /// <summary>
+    /// Gets the TMDb IDs of every movie in the library, using a briefly cached copy of the library list.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<HashSet<int>> GetLibraryTMDbIdsAsync(CancellationToken cancellationToken = default)
+    {
+        List<JellyfinItem> movies = await GetCachedMoviesAsync(cancellationToken);
+        return [.. movies.Select(x => x.TMDbId).OfType<int>()];
+    }
+
+    /// <summary>
+    /// Gets the library list from the memory cache, fetching it if needed.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task<List<JellyfinItem>> GetCachedMoviesAsync(CancellationToken cancellationToken)
+    {
+        return await cache.GetOrCreateAsync("jellyfin-movies", async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = options.Value.LibraryCacheDuration;
             return await GetMoviesAsync(cancellationToken);
         }) ?? [];
-        return Match(movies, imdbId, tmdbId) is not null;
     }
 
     /// <summary>

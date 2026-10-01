@@ -36,7 +36,12 @@
                 <div class="rounded bg-secondary-subtle flex-shrink-0" style="width: 43px; height: 64px"></div>
             }
             <div class="flex-grow-1 overflow-hidden">
-                <div class="fw-semibold">@result.Title <span class="text-muted fw-normal">@(result.Year is int year ? $"({year})" : "")</span></div>
+                <div class="fw-semibold">@result.Title <span class="text-muted fw-normal">@(result.Year is int year ? $"({year})" : "")</span>
+                    @if (Model.Library.Contains(result.Id))
+                    {
+                        <partial name="_LibraryIcon" />
+                    }
+                </div>
                 @if (Model.Directors.TryGetValue(result.Id, out string? director) && !string.IsNullOrEmpty(director))
                 {
                     <div class="small">@director</div>

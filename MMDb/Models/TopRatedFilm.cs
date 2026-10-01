@@ -49,4 +49,9 @@ public class TopRatedFilm
     /// My film ID if I have rated it, otherwise null.
     /// </summary>
     public int? FilmId { get; set; }
+
+    /// <summary>
+    /// Whether the film is in my Jellyfin library.
+    /// </summary>
+    public bool InLibrary { get; set; }
 }
