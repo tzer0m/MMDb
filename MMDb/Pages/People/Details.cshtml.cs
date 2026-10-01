@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using MMDb.Data;
 using MMDb.Helpers;
@@ -17,12 +16,12 @@ namespace MMDb.Pages.People;
 /// </summary>
 /// <param name="db">The database context.</param>
 /// <param name="filmData">The film data service.</param>
+/// <param name="filmPeople">The film people service, for cached TMDb credits.</param>
 /// <param name="tmdb">The TMDb client.</param>
 /// <param name="omdbCache">The cached OMDb ratings.</param>
-/// <param name="cache">The memory cache for TMDb credits.</param>
 /// <param name="options">The people options.</param>
 /// <param name="logger">The logger.</param>
-public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDbClient tmdb, OMDbCacheService omdbCache, IMemoryCache cache, IOptions<PeopleOptions> options, ILogger<DetailsModel> logger) : PageModel
+public partial class DetailsModel(MMDbContext db, FilmDataService filmData, FilmPeopleService filmPeople, TMDbClient tmdb, OMDbCacheService omdbCache, IOptions<PeopleOptions> options, ILogger<DetailsModel> logger) : PageModel
 {
     /// <summary>
     /// The person being displayed.
@@ -141,7 +140,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDb
         List<FilmCredit> credits = await db.FilmCredits.AsNoTracking().Include(x => x.Film).Where(x => x.PersonId == id).ToListAsync(cancellationToken);
         List<Film> films = [.. credits.Select(x => x.Film).DistinctBy(x => x.FilmId)];
         Roles = credits.GroupBy(x => x.FilmId).ToDictionary(x => x.Key, x => string.Join(", ", x.OrderBy(c => c.Role).Select(c => c.Role == CreditRole.Director ? "Director" : c.Character ?? "Cast")));
-        TMDbPersonCredits? tmdbCredits = await GetCreditsAsync(id, cancellationToken);
+        TMDbPersonCredits? tmdbCredits = await filmPeople.GetPersonCreditsAsync(id, cancellationToken);
         if (tmdbCredits is not null)
         {
             // Films I have rated where they are billed below the stored cast list, found from their full TMDb credits.
@@ -158,28 +157,6 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDb
         Films = [.. films.OrderBy(x => x.Year ?? int.MaxValue).ThenBy(x => x.Title)];
         TopRated = await LoadTopRatedAsync(tmdbCredits, cancellationToken);
         return Page();
-    }
-
-    /// <summary>
-    /// Gets a person's TMDb film credits from the memory cache, fetching them if needed, or null if TMDb fails.
-    /// </summary>
-    /// <param name="personId">The TMDb person ID.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task<TMDbPersonCredits?> GetCreditsAsync(int personId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await cache.GetOrCreateAsync($"person-credits-{personId}", async entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = options.Value.CreditsCacheDuration;
-                return await tmdb.GetPersonMovieCreditsAsync(personId, cancellationToken);
-            });
-        }
-        catch (HttpRequestException ex)
-        {
-            LogCreditsFailed(logger, ex, personId);
-            return null;
-        }
     }
 
     /// <summary>
@@ -274,13 +251,4 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, TMDb
     /// <param name="name">The person's name.</param>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not fetch TMDb details for {Name}; showing cached details.")]
     private static partial void LogDetailsFailed(ILogger logger, Exception exception, string name);
-
-    /// <summary>
-    /// Logs that a person's film credits could not be fetched from TMDb.
-    /// </summary>
-    /// <param name="logger">The logger.</param>
-    /// <param name="exception">The error.</param>
-    /// <param name="personId">The TMDb person ID.</param>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not fetch TMDb film credits for person {PersonId}.")]
-    private static partial void LogCreditsFailed(ILogger logger, Exception exception, int personId);
 }
