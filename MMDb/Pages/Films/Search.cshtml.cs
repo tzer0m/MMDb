@@ -54,7 +54,7 @@ public partial class SearchModel(MMDbContext db, TMDbClient tmdb, OMDbCacheServi
     public Dictionary<int, string> RatingSources { get; set; } = [];
 
     /// <summary>
-    /// The TMDb IDs of films in my Jellyfin library, for the library flag.
+    /// The TMDb IDs of films in my Jellyfin library, for the library flag; empty unless signed in.
     /// </summary>
     public HashSet<int> Library { get; set; } = [];
 
@@ -75,7 +75,7 @@ public partial class SearchModel(MMDbContext db, TMDbClient tmdb, OMDbCacheServi
         ExistingFilms = await db.Films.Where(x => x.TMDbId != null && ids.Contains(x.TMDbId.Value)).AsNoTracking().ToDictionaryAsync(x => x.TMDbId!.Value, cancellationToken);
         try
         {
-            Library = await jellyfin.GetLibraryTMDbIdsAsync(cancellationToken);
+            Library = User.Identity?.IsAuthenticated == true ? await jellyfin.GetLibraryTMDbIdsAsync(cancellationToken) : [];
         }
         catch (HttpRequestException ex)
         {

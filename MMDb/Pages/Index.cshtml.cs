@@ -18,7 +18,7 @@ public class IndexModel(MMDbContext db) : PageModel
     public List<Film> Films { get; set; } = [];
 
     /// <summary>
-    /// Unrated films in my Jellyfin library, as unsaved films with any cached ratings applied.
+    /// Unrated films in my Jellyfin library, as unsaved films with any cached ratings applied; only loaded when signed in.
     /// </summary>
     public List<Film> Unwatched { get; set; } = [];
 
@@ -40,6 +40,10 @@ public class IndexModel(MMDbContext db) : PageModel
         Films = await db.Films.AsNoTracking().OrderByDescending(x => x.WatchedOn).ThenBy(x => x.Title).ToListAsync();
         MyRatingCounts = RatingDistribution.ForMyRatings(Films);
         CommunityRatingCounts = RatingDistribution.ForCommunityRatings(Films);
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return;
+        }
         HashSet<int> rated = [.. Films.Select(x => x.TMDbId).OfType<int>()];
         List<LibraryFilm> libraryFilms = [.. (await db.LibraryFilms.AsNoTracking().OrderBy(x => x.Title).ToListAsync()).Where(x => !rated.Contains(x.TMDbId))];
         List<string> imdbIds = [.. libraryFilms.Select(x => x.IMDbId).OfType<string>()];

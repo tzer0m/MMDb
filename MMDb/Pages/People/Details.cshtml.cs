@@ -220,11 +220,15 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
     }
 
     /// <summary>
-    /// Gets the TMDb IDs in my Jellyfin library, or an empty set if Jellyfin can't be reached.
+    /// Gets the TMDb IDs in my Jellyfin library, or an empty set if not signed in or Jellyfin can't be reached.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
     private async Task<HashSet<int>> GetLibraryAsync(CancellationToken cancellationToken)
     {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return [];
+        }
         try
         {
             return await jellyfin.GetLibraryTMDbIdsAsync(cancellationToken);
