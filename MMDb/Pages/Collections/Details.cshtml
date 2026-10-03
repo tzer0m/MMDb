@@ -40,7 +40,7 @@
     </div>
 </div>
 
-<table class="table table-hover align-middle w-100 fs-5 film-table">
+<table id="collection-films" class="table table-hover align-middle w-100 fs-5 film-table">
     <thead>
         <tr>
             <th class="d-none d-md-table-cell"></th>
@@ -65,7 +65,7 @@
                         <img src="@posterUrl" alt="" class="rounded" width="43" height="64" loading="lazy" />
                     }
                 </td>
-                <td style="max-width: 0; width: 100%">
+                <td style="max-width: 0; width: 100%" data-order="@film.Title">
                     <div class="text-truncate" title="@film.Title">
                         @if (href is not null)
                         {
@@ -85,17 +85,17 @@
                         }
                     </div>
                 </td>
-                <td class="d-none d-md-table-cell">@film.Year</td>
+                <td class="d-none d-md-table-cell" data-order="@(film.Year ?? 9999)">@film.Year</td>
                 <td class="d-none d-md-table-cell text-nowrap">@film.Director</td>
-                <td class="d-none d-md-table-cell text-center">@{ MyRating(film, isRated, "fs-5"); }</td>
-                <td class="d-none d-md-table-cell text-center">
+                <td class="d-none d-md-table-cell text-center" data-order="@(isRated ? film.Rating : 0)">@{ MyRating(film, isRated, "fs-5"); }</td>
+                <td class="d-none d-md-table-cell text-center" data-order="@(film.CommunityRating ?? -1)">
                     @if (film.CommunityRating is double communityRating)
                     {
                         <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(communityRating)">@communityRating.ToString("0.0")</span>
                     }
                 </td>
-                <td class="d-none d-md-table-cell text-center text-nowrap">@(isRated ? film.RatingDelta?.ToString("+0.0;-0.0;0.0") : "")</td>
-                <td class="d-none d-md-table-cell text-nowrap">@film.WatchedOn?.ToString("d MMM yyyy")</td>
+                <td class="d-none d-md-table-cell text-center text-nowrap" data-order="@(isRated ? film.RatingDelta ?? -99 : -99)">@(isRated ? film.RatingDelta?.ToString("+0.0;-0.0;0.0") : "")</td>
+                <td class="d-none d-md-table-cell text-nowrap" data-order="@(film.WatchedOn?.ToString("yyyy-MM-dd") ?? "0000-00-00")">@film.WatchedOn?.ToString("d MMM yyyy")</td>
             </tr>
         }
     </tbody>
@@ -113,4 +113,25 @@
             <span class="badge bg-secondary text-body @extraClass" title="Not Rated Yet">#</span>
         }
     }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.css" />
+}
+
+@section Scripts {
+    <script src="~/lib/datatables.net/dataTables.min.js"></script>
+    <script src="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.js"></script>
+    <script>
+        // Sortable by any column except the poster, oldest first by default; no paging, search or info since collections are short.
+        new DataTable('#collection-films', {
+            order: [[2, 'asc'], [1, 'asc']],
+            autoWidth: false,
+            paging: false,
+            searching: false,
+            info: false,
+            columnDefs: [{ targets: 0, orderable: false }],
+            layout: { topStart: null, topEnd: null, bottomStart: null, bottomEnd: null }
+        });
+    </script>
 }
