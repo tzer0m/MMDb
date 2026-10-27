@@ -1,6 +1,6 @@
 # MMDb
 
-[![Deploy](https://github.com/tzer0m/MMDb/actions/workflows/deploy.yml/badge.svg)](https://github.com/tzer0m/MMDb/actions/workflows/deploy.yml)
+[![Deploy](https://github.com/tzer0m/MMDb/actions/workflows/deploy.yml/badge.svg)](https://github.com/tzer0m/MMDb/actions/workflows/deploy.yml) [![Dependabot](https://github.com/tzer0m/MMDb/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/tzer0m/MMDb/actions/workflows/dependabot/dependabot-updates)
 
 My Movie Database: a self-hosted site for keeping my film ratings, built with ASP.NET Core Razor Pages on .NET 10.
 
