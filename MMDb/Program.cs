@@ -94,4 +94,5 @@ app.MapStaticAssets();
 app.MapRazorPages().WithStaticAssets();
 app.MapHealthChecks("/health");
 app.MapGet("/poster/{itemId}/{tag}", PosterEndpoint.GetAsync);
+app.MapGet("/api/widget", WidgetEndpoint.GetAsync);
 app.Run();
