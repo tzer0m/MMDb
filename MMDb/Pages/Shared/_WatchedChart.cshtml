@@ -1,0 +1,28 @@
+﻿@model (string Title, List<WeeklyCount> Weeks)
+@{
+    int max = Math.Max(1, Model.Weeks.Count == 0 ? 0 : Model.Weeks.Max(x => x.Count));
+}
+
+<div class="card h-100">
+    <div class="card-body">
+        <h2 class="h6 card-title">@Model.Title</h2>
+        <div class="d-flex align-items-end" style="height: 120px; gap: 1px" role="img" aria-label="@Model.Title by week">
+            @foreach (WeeklyCount week in Model.Weeks)
+            {
+                string height = (week.Count * 100.0 / max).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+                <div class="flex-fill h-100 d-flex flex-column justify-content-end" style="flex-basis: 0" title="Week of @week.Week.ToString("d MMM yyyy"): @week.Count @(week.Count == 1 ? "film" : "films")">
+                    <div class="bg-primary" style="height: @height%; border-radius: 2px 2px 0 0"></div>
+                </div>
+            }
+        </div>
+        <div class="d-flex border-top pt-1" style="gap: 1px">
+            @for (int index = 0; index < Model.Weeks.Count; index++)
+            {
+                DateOnly week = Model.Weeks[index].Week;
+                bool isNewMonth = index == 0 || week.Month != Model.Weeks[index - 1].Week.Month;
+                string label = !isNewMonth ? "" : week.Month == 1 || index == 0 ? week.Year.ToString() : Model.Weeks.Count > 78 ? week.ToString("MMM")[..1] : week.ToString("MMM");
+                <div class="flex-fill small text-muted" style="flex-basis: 0; white-space: nowrap">@label</div>
+            }
+        </div>
+    </div>
+</div>

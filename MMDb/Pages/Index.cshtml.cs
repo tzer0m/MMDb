@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using MMDb.Data;
 using MMDb.Helpers;
 using MMDb.Models;
+using MMDb.Options;
 
 namespace MMDb.Pages;
 
@@ -10,7 +12,8 @@ namespace MMDb.Pages;
 /// The home page, listing all rated films in a table, followed by unrated films in my Jellyfin library.
 /// </summary>
 /// <param name="db">The database context.</param>
-public class IndexModel(MMDbContext db) : PageModel
+/// <param name="chartOptions">The chart options.</param>
+public class IndexModel(MMDbContext db, IOptions<ChartOptions> chartOptions) : PageModel
 {
     /// <summary>
     /// All rated films, most recently watched first.
@@ -33,6 +36,11 @@ public class IndexModel(MMDbContext db) : PageModel
     public int[] CommunityRatingCounts { get; set; } = [];
 
     /// <summary>
+    /// How many films were watched in each week, from the configured start date.
+    /// </summary>
+    public List<WeeklyCount> WatchedCounts { get; set; } = [];
+
+    /// <summary>
     /// Loads every film and counts the ratings for the charts; searching and sorting happen in the browser.
     /// </summary>
     public async Task OnGetAsync()
@@ -40,6 +48,7 @@ public class IndexModel(MMDbContext db) : PageModel
         Films = await db.Films.AsNoTracking().OrderByDescending(x => x.WatchedOn).ThenBy(x => x.Title).ToListAsync();
         MyRatingCounts = RatingDistribution.ForMyRatings(Films);
         CommunityRatingCounts = RatingDistribution.ForCommunityRatings(Films);
+        WatchedCounts = WatchedDistribution.ForWeeks(Films, chartOptions.Value.WatchedStartDate);
         if (User.Identity?.IsAuthenticated != true)
         {
             return;

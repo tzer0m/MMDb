@@ -18,6 +18,7 @@ builder.Services.Configure<ExternalLinkOptions>(builder.Configuration.GetSection
 builder.Services.Configure<RatingsRefreshOptions>(builder.Configuration.GetSection("RatingsRefresh"));
 builder.Services.Configure<PeopleOptions>(builder.Configuration.GetSection("People"));
 builder.Services.Configure<SearchOptions>(builder.Configuration.GetSection("Search"));
+builder.Services.Configure<ChartOptions>(builder.Configuration.GetSection("Charts"));
 builder.Services.AddHttpClient<TMDbClient>();
 builder.Services.AddHttpClient<OMDbClient>();
 builder.Services.AddHttpClient<JellyfinClient>();
