@@ -57,7 +57,7 @@
         @foreach (Film film in Model.Films)
         {
             bool isRated = film.FilmId != 0;
-            string? href = isRated ? Url.Page("/Films/Details", new { id = film.FilmId }) : film.TMDbId is int tmdbId ? Url.Page("/Films/Preview", new { tmdbId }) : null;
+            string? href = isRated ? Url.Page("/Films/Details", new { id = film.FilmId }) : film.TMDbId is int tmdbId && User.Identity?.IsAuthenticated == true ? Url.Page("/Films/Preview", new { tmdbId }) : null;
             <tr class="position-relative">
                 <td class="p-1">
                     @if (await Posters.UrlAsync(film.TMDbId, film.IMDbId, film.PosterPath, 92) is string posterUrl)

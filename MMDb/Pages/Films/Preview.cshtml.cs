@@ -48,7 +48,7 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, OMDb
     public FilmInput Input { get; set; } = new();
 
     /// <summary>
-    /// Shows the preview, or my film page if I have already rated it.
+    /// Shows the preview when signed in, or my film page if I have already rated it.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
@@ -57,6 +57,12 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, OMDb
         if (existingId is int filmId)
         {
             return RedirectToPage("/Films/Details", new { id = filmId });
+        }
+
+        // Previews call TMDb on every visit, so signed out they 404; otherwise crawlers can walk every film on TMDb.
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return NotFound();
         }
         if (!await LoadPreviewAsync(cancellationToken))
         {

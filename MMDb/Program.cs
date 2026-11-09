@@ -68,10 +68,11 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// Everything is public except editing films; adding checks sign-in when the form is posted.
+// Everything is public except editing films and searching TMDb; previews and unrated people 404 when signed out, and adding checks sign-in when the form is posted.
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizePage("/Films/Edit");
+    options.Conventions.AuthorizePage("/Films/Search");
 });
 
 // Build the app and apply any pending migrations.

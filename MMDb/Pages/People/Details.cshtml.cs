@@ -118,12 +118,18 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
     }
 
     /// <summary>
-    /// Loads the person, refreshing their details from TMDb if stale, and their rated films.
+    /// Loads the person, refreshing their details from TMDb if stale, and their rated films; signed out, only people from my rated films are shown.
     /// </summary>
     /// <param name="id">The TMDb person ID.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<IActionResult> OnGetAsync(int id, CancellationToken cancellationToken)
     {
+        // Signed out, only show people credited on films I have rated, so crawlers can't walk every person on TMDb.
+        if (User.Identity?.IsAuthenticated != true && !await db.FilmCredits.AnyAsync(x => x.PersonId == id, cancellationToken))
+        {
+            return NotFound();
+        }
+
         Person? person = await db.People.FirstOrDefaultAsync(x => x.PersonId == id, cancellationToken);
         if (person is null)
         {

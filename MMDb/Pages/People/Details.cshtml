@@ -131,7 +131,7 @@
         <tbody>
             @foreach (TopRatedFilm film in Model.TopRated)
             {
-                string href = film.FilmId is int filmId ? Url.Page("/Films/Details", new { id = filmId })! : Url.Page("/Films/Preview", new { tmdbId = film.TMDbId })!;
+                string? href = film.FilmId is int filmId ? Url.Page("/Films/Details", new { id = filmId }) : User.Identity?.IsAuthenticated == true ? Url.Page("/Films/Preview", new { tmdbId = film.TMDbId }) : null;
                 <tr class="position-relative @(film.FilmId is null ? "" : "seen-film")" title="@(film.FilmId is null ? "" : "Seen")">
                     <td class="p-1">
                         @if (await Posters.UrlAsync(film.TMDbId, null, film.PosterPath, 92) is string posterUrl)

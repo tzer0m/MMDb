@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /film/tmdb/
+Disallow: /film/lookup
+Disallow: /account/
