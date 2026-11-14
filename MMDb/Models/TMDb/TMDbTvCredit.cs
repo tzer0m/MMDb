@@ -31,6 +31,11 @@ public class TMDbTvCredit
     public List<int> GenreIds { get; set; } = [];
 
     /// <summary>
+    /// The number of TMDb user ratings.
+    /// </summary>
+    public int VoteCount { get; set; }
+
+    /// <summary>
     /// The character played.
     /// </summary>
     public string? Character { get; set; }

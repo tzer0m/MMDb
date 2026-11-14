@@ -46,7 +46,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
     public List<TopRatedFilm> TopRated { get; set; } = [];
 
     /// <summary>
-    /// The TV shows they acted in, most episodes first.
+    /// Their best known TV shows, by TMDb vote count.
     /// </summary>
     public List<TvRole> TvShows { get; set; } = [];
 
@@ -211,7 +211,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
     }
 
     /// <summary>
-    /// Builds a person's TV shows from their TMDb TV credits, leaving out excluded genres such as talk shows, most episodes first.
+    /// Builds a person's best known TV shows by TMDb vote count, leaving out excluded genres such as talk shows.
     /// </summary>
     /// <param name="credits">Their TMDb TV credits, or null if they could not be loaded.</param>
     private List<TvRole> LoadTvShows(TMDbPersonTvCredits? credits)
@@ -221,7 +221,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
             return [];
         }
         List<int> excluded = options.Value.TvExcludedGenreIds;
-        return [.. credits.Cast.Where(x => !x.GenreIds.Any(excluded.Contains)).GroupBy(x => x.Id).Select(x => new TvRole { Name = x.First().Name, Year = x.First().Year, PosterPath = x.First().PosterPath, Character = string.Join(", ", x.Select(c => CharacterName.Clean(c.Character)).OfType<string>().Distinct()), EpisodeCount = x.Sum(c => c.EpisodeCount) }).OrderByDescending(x => x.EpisodeCount).ThenBy(x => x.Year ?? int.MaxValue).ThenBy(x => x.Name)];
+        return [.. credits.Cast.Where(x => !x.GenreIds.Any(excluded.Contains)).GroupBy(x => x.Id).OrderByDescending(x => x.Max(c => c.VoteCount)).ThenBy(x => x.First().Name).Take(options.Value.TvCount).Select(x => new TvRole { Name = x.First().Name, Year = x.First().Year, PosterPath = x.First().PosterPath, Character = string.Join(", ", x.Select(c => CharacterName.Clean(c.Character)).OfType<string>().Distinct()), EpisodeCount = x.Sum(c => c.EpisodeCount) })];
     }
 
     /// <summary>

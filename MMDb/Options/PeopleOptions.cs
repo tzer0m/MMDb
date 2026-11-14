@@ -31,6 +31,11 @@ public class PeopleOptions
     public TimeSpan CreditsCacheDuration { get; set; } = TimeSpan.FromDays(1);
 
     /// <summary>
+    /// How many of a person's TV shows to show.
+    /// </summary>
+    public int TvCount { get; set; } = 10;
+
+    /// <summary>
     /// TMDb TV genre IDs left out of a person's TV shows, e.g. news, reality and talk shows.
     /// </summary>
     public List<int> TvExcludedGenreIds { get; set; } = [];

@@ -115,107 +115,113 @@
     </tbody>
 </table>
 
-@if (Model.TopRated.Count > 0)
-{
-    <h2 class="h4 mt-4">Other Roles</h2>
-    <table class="table table-hover align-middle w-100 fs-5 film-table">
-        <thead>
-            <tr>
-                <th class="d-none d-md-table-cell"></th>
-                <th class="d-none d-md-table-cell">Title</th>
-                <th class="d-none d-md-table-cell">Year</th>
-                <th class="d-none d-md-table-cell">Role</th>
-                <th class="d-none d-md-table-cell text-center" title="Community Rating">CR</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (TopRatedFilm film in Model.TopRated)
-            {
-                string? href = film.FilmId is int filmId ? Url.Page("/Films/Details", new { id = filmId }) : User.Identity?.IsAuthenticated == true ? Url.Page("/Films/Preview", new { tmdbId = film.TMDbId }) : null;
-                <tr class="position-relative @(film.FilmId is null ? "" : "seen-film")" title="@(film.FilmId is null ? "" : "Seen")">
-                    <td class="p-1">
-                        @if (await Posters.UrlAsync(film.TMDbId, null, film.PosterPath, 92) is string posterUrl)
-                        {
-                            <img src="@posterUrl" alt="" class="rounded" width="43" height="64" loading="lazy" />
-                        }
-                    </td>
-                    <td style="max-width: 0; width: 100%">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="text-truncate" title="@film.Title"><a href="@href" class="stretched-link text-reset text-decoration-none">@film.Title</a></span>
-                            @if (film.InLibrary)
-                            {
-                                <partial name="_LibraryIcon" />
-                            }
-                            @foreach (MMDb.Models.Jellyfin.JellyfinCollection collection in Model.CollectionsFor(null, film.TMDbId))
-                            {
-                                <partial name="_CollectionLink" model="collection" />
-                            }
-                        </div>
-                        <div class="d-flex d-md-none align-items-center gap-2 mt-1">
-                            <span class="text-truncate text-muted small" title="@film.Role">@(film.Year is int year ? $"{year} \u00b7 " : "")@film.Role</span>
-                            @if (film.CommunityRating is double mobileRating)
-                            {
-                                <span class="badge text-black ms-auto" style="@RatingColour.StyleForRating(mobileRating)" title="@film.RatingSources">@mobileRating.ToString("0.0")</span>
-                            }
-                        </div>
-                    </td>
-                    <td class="d-none d-md-table-cell">@film.Year</td>
-                    <td class="d-none d-md-table-cell text-truncate" style="max-width: 16rem" title="@film.Role">@film.Role</td>
-                    <td class="d-none d-md-table-cell text-center">
-                        @if (film.CommunityRating is double rating)
-                        {
-                            <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(rating)" title="@film.RatingSources">@rating.ToString("0.0")</span>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+<div class="row">
+    @if (Model.TopRated.Count > 0)
+    {
+        <div class="col-12 col-xl">
+            <h2 class="h4 mt-4">Other Roles</h2>
+            <table class="table table-hover align-middle w-100 fs-5 film-table">
+                <thead>
+                    <tr>
+                        <th class="d-none d-md-table-cell"></th>
+                        <th class="d-none d-md-table-cell">Title</th>
+                        <th class="d-none d-md-table-cell">Year</th>
+                        <th class="d-none d-md-table-cell">Role</th>
+                        <th class="d-none d-md-table-cell text-center" title="Community Rating">CR</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (TopRatedFilm film in Model.TopRated)
+                    {
+                        string? href = film.FilmId is int filmId ? Url.Page("/Films/Details", new { id = filmId }) : User.Identity?.IsAuthenticated == true ? Url.Page("/Films/Preview", new { tmdbId = film.TMDbId }) : null;
+                        <tr class="position-relative @(film.FilmId is null ? "" : "seen-film")" title="@(film.FilmId is null ? "" : "Seen")">
+                            <td class="p-1">
+                                @if (await Posters.UrlAsync(film.TMDbId, null, film.PosterPath, 92) is string posterUrl)
+                                {
+                                    <img src="@posterUrl" alt="" class="rounded" width="43" height="64" loading="lazy" />
+                                }
+                            </td>
+                            <td style="max-width: 0; width: 100%">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="text-truncate" title="@film.Title"><a href="@href" class="stretched-link text-reset text-decoration-none">@film.Title</a></span>
+                                    @if (film.InLibrary)
+                                    {
+                                        <partial name="_LibraryIcon" />
+                                    }
+                                    @foreach (MMDb.Models.Jellyfin.JellyfinCollection collection in Model.CollectionsFor(null, film.TMDbId))
+                                    {
+                                        <partial name="_CollectionLink" model="collection" />
+                                    }
+                                </div>
+                                <div class="d-flex d-md-none align-items-center gap-2 mt-1">
+                                    <span class="text-truncate text-muted small" title="@film.Role">@(film.Year is int year ? $"{year} \u00b7 " : "")@film.Role</span>
+                                    @if (film.CommunityRating is double mobileRating)
+                                    {
+                                        <span class="badge text-black ms-auto" style="@RatingColour.StyleForRating(mobileRating)" title="@film.RatingSources">@mobileRating.ToString("0.0")</span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="d-none d-md-table-cell">@film.Year</td>
+                            <td class="d-none d-md-table-cell text-truncate" style="max-width: 16rem" title="@film.Role">@film.Role</td>
+                            <td class="d-none d-md-table-cell text-center">
+                                @if (film.CommunityRating is double rating)
+                                {
+                                    <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(rating)" title="@film.RatingSources">@rating.ToString("0.0")</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 
-@if (Model.TvShows.Count > 0)
-{
-    <h2 class="h4 mt-4">TV</h2>
-    <table class="table align-middle w-100 fs-5 film-table">
-        <thead>
-            <tr>
-                <th class="d-none d-md-table-cell"></th>
-                <th class="d-none d-md-table-cell">Title</th>
-                <th class="d-none d-md-table-cell">Year</th>
-                <th class="d-none d-md-table-cell">Role</th>
-                <th class="d-none d-md-table-cell text-center" title="Episodes">Eps</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (TvRole show in Model.TvShows)
-            {
-                <tr>
-                    <td class="p-1">
-                        @if (await Posters.UrlAsync(null, null, show.PosterPath, 92) is string posterUrl)
-                        {
-                            <img src="@posterUrl" alt="" class="rounded" width="43" height="64" loading="lazy" />
-                        }
-                    </td>
-                    <td style="max-width: 0; width: 100%">
-                        <div class="text-truncate" title="@show.Name">@show.Name</div>
-                        <div class="d-flex d-md-none align-items-center gap-2 mt-1">
-                            <span class="text-truncate text-muted small" title="@show.Character">@(show.Year is int year ? $"{year} \u00b7 " : "")@show.Character</span>
-                            @if (show.EpisodeCount > 0)
-                            {
-                                <span class="text-muted small text-nowrap ms-auto">@show.EpisodeCount ep</span>
-                            }
-                        </div>
-                    </td>
-                    <td class="d-none d-md-table-cell">@show.Year</td>
-                    <td class="d-none d-md-table-cell text-truncate" style="max-width: 16rem" title="@show.Character">@show.Character</td>
-                    <td class="d-none d-md-table-cell text-center">
-                        @if (show.EpisodeCount > 0)
-                        {
-                            @show.EpisodeCount
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
+    @if (Model.TvShows.Count > 0)
+    {
+        <div class="col-12 col-xl">
+            <h2 class="h4 mt-4">TV Shows</h2>
+            <table class="table align-middle w-100 fs-5 film-table">
+                <thead>
+                    <tr>
+                        <th class="d-none d-md-table-cell"></th>
+                        <th class="d-none d-md-table-cell">Title</th>
+                        <th class="d-none d-md-table-cell">Year</th>
+                        <th class="d-none d-md-table-cell">Role</th>
+                        <th class="d-none d-md-table-cell text-center" title="Episodes">Eps</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (TvRole show in Model.TvShows)
+                    {
+                        <tr>
+                            <td class="p-1">
+                                @if (await Posters.UrlAsync(null, null, show.PosterPath, 92) is string posterUrl)
+                                {
+                                    <img src="@posterUrl" alt="" class="rounded" width="43" height="64" loading="lazy" />
+                                }
+                            </td>
+                            <td style="max-width: 0; width: 100%">
+                                <div class="text-truncate" title="@show.Name">@show.Name</div>
+                                <div class="d-flex d-md-none align-items-center gap-2 mt-1">
+                                    <span class="text-truncate text-muted small" title="@show.Character">@(show.Year is int year ? $"{year} \u00b7 " : "")@show.Character</span>
+                                    @if (show.EpisodeCount > 0)
+                                    {
+                                        <span class="text-muted small text-nowrap ms-auto">@show.EpisodeCount ep</span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="d-none d-md-table-cell">@show.Year</td>
+                            <td class="d-none d-md-table-cell text-truncate" style="max-width: 16rem" title="@show.Character">@show.Character</td>
+                            <td class="d-none d-md-table-cell text-center">
+                                @if (show.EpisodeCount > 0)
+                                {
+                                    @show.EpisodeCount
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
