@@ -26,7 +26,12 @@ public class PeopleOptions
     public int TopRatedMinVotes { get; set; } = 500;
 
     /// <summary>
-    /// How long a person's TMDb film credits are cached in memory.
+    /// How long a person's TMDb film and TV credits are cached in memory.
     /// </summary>
     public TimeSpan CreditsCacheDuration { get; set; } = TimeSpan.FromDays(1);
+
+    /// <summary>
+    /// TMDb TV genre IDs left out of a person's TV shows, e.g. news, reality and talk shows.
+    /// </summary>
+    public List<int> TvExcludedGenreIds { get; set; } = [];
 }

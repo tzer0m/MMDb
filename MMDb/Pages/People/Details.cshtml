@@ -172,3 +172,50 @@
         </tbody>
     </table>
 }
+
+@if (Model.TvShows.Count > 0)
+{
+    <h2 class="h4 mt-4">TV</h2>
+    <table class="table align-middle w-100 fs-5 film-table">
+        <thead>
+            <tr>
+                <th class="d-none d-md-table-cell"></th>
+                <th class="d-none d-md-table-cell">Title</th>
+                <th class="d-none d-md-table-cell">Year</th>
+                <th class="d-none d-md-table-cell">Role</th>
+                <th class="d-none d-md-table-cell text-center" title="Episodes">Eps</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (TvRole show in Model.TvShows)
+            {
+                <tr>
+                    <td class="p-1">
+                        @if (await Posters.UrlAsync(null, null, show.PosterPath, 92) is string posterUrl)
+                        {
+                            <img src="@posterUrl" alt="" class="rounded" width="43" height="64" loading="lazy" />
+                        }
+                    </td>
+                    <td style="max-width: 0; width: 100%">
+                        <div class="text-truncate" title="@show.Name">@show.Name</div>
+                        <div class="d-flex d-md-none align-items-center gap-2 mt-1">
+                            <span class="text-truncate text-muted small" title="@show.Character">@(show.Year is int year ? $"{year} \u00b7 " : "")@show.Character</span>
+                            @if (show.EpisodeCount > 0)
+                            {
+                                <span class="text-muted small text-nowrap ms-auto">@show.EpisodeCount ep</span>
+                            }
+                        </div>
+                    </td>
+                    <td class="d-none d-md-table-cell">@show.Year</td>
+                    <td class="d-none d-md-table-cell text-truncate" style="max-width: 16rem" title="@show.Character">@show.Character</td>
+                    <td class="d-none d-md-table-cell text-center">
+                        @if (show.EpisodeCount > 0)
+                        {
+                            @show.EpisodeCount
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

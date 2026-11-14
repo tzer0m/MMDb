@@ -13,7 +13,7 @@ using MMDb.Services;
 namespace MMDb.Pages.People;
 
 /// <summary>
-/// Shows a director or actor, every film of theirs I have rated, and their top rated films on TMDb.
+/// Shows a director or actor, every film of theirs I have rated, their top rated films on TMDb, and their TV shows.
 /// </summary>
 /// <param name="db">The database context.</param>
 /// <param name="filmData">The film data service.</param>
@@ -44,6 +44,11 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
     /// Their top rated films on TMDb, including ones I have seen.
     /// </summary>
     public List<TopRatedFilm> TopRated { get; set; } = [];
+
+    /// <summary>
+    /// The TV shows they acted in, most episodes first.
+    /// </summary>
+    public List<TvRole> TvShows { get; set; } = [];
 
     /// <summary>
     /// Every Jellyfin collection, for the collection icons, or empty if Jellyfin can't be reached.
@@ -184,6 +189,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
         }
         Films = [.. films.OrderBy(x => x.Year ?? int.MaxValue).ThenBy(x => x.Title)];
         TopRated = await LoadTopRatedAsync(tmdbCredits, cancellationToken);
+        TvShows = LoadTvShows(await filmPeople.GetPersonTvCreditsAsync(id, cancellationToken));
         try
         {
             Collections = await jellyfin.GetCollectionsAsync(cancellationToken);
@@ -202,6 +208,20 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
     private static string DescribeRole(IEnumerable<TMDbPersonCredit> credits)
     {
         return string.Join(", ", credits.OrderBy(x => x.Job == "Director" ? 0 : 1).Select(x => x.Job == "Director" ? "Director" : CharacterName.Clean(x.Character) ?? "Cast").Distinct());
+    }
+
+    /// <summary>
+    /// Builds a person's TV shows from their TMDb TV credits, leaving out excluded genres such as talk shows, most episodes first.
+    /// </summary>
+    /// <param name="credits">Their TMDb TV credits, or null if they could not be loaded.</param>
+    private List<TvRole> LoadTvShows(TMDbPersonTvCredits? credits)
+    {
+        if (credits is null)
+        {
+            return [];
+        }
+        List<int> excluded = options.Value.TvExcludedGenreIds;
+        return [.. credits.Cast.Where(x => !x.GenreIds.Any(excluded.Contains)).GroupBy(x => x.Id).Select(x => new TvRole { Name = x.First().Name, Year = x.First().Year, PosterPath = x.First().PosterPath, Character = string.Join(", ", x.Select(c => CharacterName.Clean(c.Character)).OfType<string>().Distinct()), EpisodeCount = x.Sum(c => c.EpisodeCount) }).OrderByDescending(x => x.EpisodeCount).ThenBy(x => x.Year ?? int.MaxValue).ThenBy(x => x.Name)];
     }
 
     /// <summary>

@@ -8,7 +8,7 @@ My Movie Database: a self-hosted site for keeping my film ratings, built with AS
 
 - **Home**: a searchable, sortable table of every rated film with posters, my rating (MR) and the community rating (CR), plus bar charts of both rating distributions. Searching for a film that isn't in the list offers to add it.
 - **Film pages**: poster, runtime, watched date, overview, my rating and the community rating, individual IMDb, TMDb, Rotten Tomatoes and Metacritic ratings linking to each site, and the director and top five cast with the other films of theirs I've rated.
-- **Person pages**: photo, dates, birthplace and a short biography, average ratings, and every film of theirs I've rated.
+- **Person pages**: photo, dates, birthplace and a short biography, average ratings, every film of theirs I've rated, and the TV shows they've been in with their character names.
 - **Add and edit**: search TMDb, pick a film, rate it and set the watched date. Ratings are pushed to the film's Critics Rating in Jellyfin.
 - **Community rating (CR)**: the average of the TMDb, IMDb, Rotten Tomatoes and Metacritic ratings on a 10-point scale, using whichever are available.
 - **Background refresh**: a daily job refreshes each film's IMDb, Rotten Tomatoes and Metacritic ratings from OMDb once they're over 7 days old.
@@ -70,7 +70,7 @@ Non-secret settings live in `appsettings.json`:
 | `OMDb` | API base URL, and how long cached OMDb ratings last for lookups, previews and library films |
 | `Search` | How many TMDb results the lookup page shows |
 | `RatingsRefresh` | How often the nightly job runs (ratings refresh, Jellyfin rating sync and library sync), how old ratings can get, and how many films to refresh per run |
-| `People` | How long cached person details and TMDb credits last, how many cast members to store and show per film, and how many top rated films (with a minimum vote count) to show under Other Roles |
+| `People` | How long cached person details and TMDb credits last, how many cast members to store and show per film, how many top rated films (with a minimum vote count) to show under Other Roles, and which TMDb TV genres (news, reality, talk) to leave out of the TV section |
 | `ExternalLinks` | URL templates for TMDb, IMDb, Rotten Tomatoes, Metacritic, GitHub and SwagBagger links |
 | `Jellyfin` | Server URL, and how long the library list and collections are cached |
 

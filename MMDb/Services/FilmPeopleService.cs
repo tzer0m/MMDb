@@ -9,7 +9,7 @@ using MMDb.Options;
 namespace MMDb.Services;
 
 /// <summary>
-/// Builds the director and cast section shown on film pages and previews, and serves people's cached TMDb credits.
+/// Builds the director and cast section shown on film pages and previews, and serves people's cached TMDb film and TV credits.
 /// </summary>
 /// <param name="db">The database context.</param>
 /// <param name="tmdb">The TMDb client.</param>
@@ -71,6 +71,28 @@ public partial class FilmPeopleService(MMDbContext db, TMDbClient tmdb, IMemoryC
     }
 
     /// <summary>
+    /// Gets a person's TMDb TV credits from the memory cache, fetching them if needed, or null if TMDb fails.
+    /// </summary>
+    /// <param name="personId">The TMDb person ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<TMDbPersonTvCredits?> GetPersonTvCreditsAsync(int personId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await cache.GetOrCreateAsync($"person-tv-credits-{personId}", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = options.Value.CreditsCacheDuration;
+                return await tmdb.GetPersonTvCreditsAsync(personId, cancellationToken);
+            });
+        }
+        catch (HttpRequestException ex)
+        {
+            LogTvCreditsFailed(logger, ex, personId);
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Logs that a person's film credits could not be fetched from TMDb.
     /// </summary>
     /// <param name="logger">The logger.</param>
@@ -78,4 +100,13 @@ public partial class FilmPeopleService(MMDbContext db, TMDbClient tmdb, IMemoryC
     /// <param name="personId">The TMDb person ID.</param>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not fetch TMDb film credits for person {PersonId}.")]
     private static partial void LogCreditsFailed(ILogger logger, Exception exception, int personId);
+
+    /// <summary>
+    /// Logs that a person's TV credits could not be fetched from TMDb.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="exception">The error.</param>
+    /// <param name="personId">The TMDb person ID.</param>
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not fetch TMDb TV credits for person {PersonId}.")]
+    private static partial void LogTvCreditsFailed(ILogger logger, Exception exception, int personId);
 }
