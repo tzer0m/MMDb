@@ -41,6 +41,16 @@ public class TMDbClient(HttpClient http, IOptions<TMDbOptions> options)
     }
 
     /// <summary>
+    /// Gets the full details of a TV show, including its cast across every season and its IMDb ID.
+    /// </summary>
+    /// <param name="tmdbId">The TMDb TV show ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<TMDbTvShow?> GetTvShowAsync(int tmdbId, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<TMDbTvShow>($"tv/{tmdbId}?append_to_response=aggregate_credits,external_ids", cancellationToken);
+    }
+
+    /// <summary>
     /// Gets a person's details, returning null if TMDb has no such person.
     /// </summary>
     /// <param name="personId">The TMDb person ID.</param>

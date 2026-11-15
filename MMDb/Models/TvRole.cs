@@ -6,6 +6,11 @@ namespace MMDb.Models;
 public class TvRole
 {
     /// <summary>
+    /// The TMDb TV show ID.
+    /// </summary>
+    public int TMDbId { get; set; }
+
+    /// <summary>
     /// The show's name.
     /// </summary>
     public string Name { get; set; } = string.Empty;

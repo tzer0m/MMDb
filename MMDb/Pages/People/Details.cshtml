@@ -180,7 +180,7 @@
     {
         <div class="col-12 col-xl">
             <h2 class="h4 mt-4">TV Shows</h2>
-            <table class="table align-middle w-100 fs-5 film-table">
+            <table class="table table-hover align-middle w-100 fs-5 film-table">
                 <thead>
                     <tr>
                         <th class="d-none d-md-table-cell"></th>
@@ -193,7 +193,8 @@
                 <tbody>
                     @foreach (TvRole show in Model.TvShows)
                     {
-                        <tr>
+                        string? href = User.Identity?.IsAuthenticated == true ? Url.Page("/Shows/Details", new { tmdbId = show.TMDbId }) : null;
+                        <tr class="position-relative">
                             <td class="p-1">
                                 @if (await Posters.UrlAsync(null, null, show.PosterPath, 92) is string posterUrl)
                                 {
@@ -201,7 +202,7 @@
                                 }
                             </td>
                             <td style="max-width: 0; width: 100%">
-                                <div class="text-truncate" title="@show.Name">@show.Name</div>
+                                <div class="text-truncate" title="@show.Name"><a href="@href" class="stretched-link text-reset text-decoration-none">@show.Name</a></div>
                                 <div class="d-flex d-md-none align-items-center gap-2 mt-1">
                                     <span class="text-truncate text-muted small" title="@show.Character">@(show.Year is int year ? $"{year} \u00b7 " : "")@show.Character</span>
                                     @if (show.EpisodeCount > 0)

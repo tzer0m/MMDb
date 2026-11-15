@@ -1,0 +1,60 @@
+﻿@page "/tv/{tmdbId:int}"
+@model MMDb.Pages.Shows.DetailsModel
+@using Microsoft.Extensions.Options
+@using MMDb.Options
+@inject IOptions<ExternalLinkOptions> ExternalLinks
+@{
+    ViewData["Title"] = Model.Show.Name;
+    string tmdbUrl = string.Format(ExternalLinks.Value.TMDbTv, Model.Show.Id);
+    string? imdbUrl = Model.Show.ExternalIds?.ImdbId is string imdbId && imdbId.Length > 0 ? string.Format(ExternalLinks.Value.IMDb, imdbId) : null;
+}
+
+<div class="detail-layout">
+    <div class="detail-poster">
+        <div class="ratio rounded overflow-hidden bg-body-secondary" style="--bs-aspect-ratio: 150%">
+            @if (await Posters.UrlAsync(null, null, Model.Show.PosterPath, 342) is string posterUrl)
+            {
+                <img src="@posterUrl" alt="@Model.Show.Name poster" class="object-fit-cover" />
+            }
+        </div>
+    </div>
+    <div class="detail-header d-flex flex-wrap flex-md-nowrap justify-content-between align-items-start gap-3">
+        <div class="min-w-0">
+            <h1 class="mb-1">
+                @Model.Show.Name
+                @if (Model.Show.YearsText is string years)
+                {
+                    <span class="text-muted fw-normal">(@years)</span>
+                }
+            </h1>
+            <p class="text-muted mb-0">@Model.EpisodesText</p>
+        </div>
+        <div class="d-flex align-items-stretch gap-2 flex-shrink-0">
+            @if (Model.Show.VoteCount > 0)
+            {
+                <span class="badge fs-2 rating-lg text-black" style="@RatingColour.StyleForRating(Model.Show.VoteAverage)" title="TMDb Rating">@Model.Show.VoteAverage.ToString("0.0")</span>
+            }
+            else
+            {
+                <span class="badge fs-2 rating-lg border border-secondary" style="min-width: 2.5em" title="TMDb Rating"></span>
+            }
+        </div>
+    </div>
+    <div class="detail-body">
+        @if (!string.IsNullOrWhiteSpace(Model.Show.Overview))
+        {
+            <p style="white-space: pre-line">@Model.Show.Overview</p>
+        }
+
+        <div class="d-flex flex-wrap gap-3 mt-3">
+            <a href="@imdbUrl" target="_blank" rel="noopener" class="btn btn-outline-secondary d-flex align-items-center gap-2 @(imdbUrl is null ? "disabled" : "")" title="IMDb">
+                <img src="/img/imdb.svg" alt="IMDb" height="20" />
+            </a>
+            <a href="@tmdbUrl" target="_blank" rel="noopener" class="btn btn-outline-secondary d-flex align-items-center gap-2" title="TMDb">
+                <img src="/img/tmdb.svg" alt="TMDb" height="20" />
+            </a>
+        </div>
+    </div>
+</div>
+
+<partial name="_FilmPeople" model="Model.People" />

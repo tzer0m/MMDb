@@ -221,7 +221,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
             return [];
         }
         List<int> excluded = options.Value.TvExcludedGenreIds;
-        return [.. credits.Cast.Where(x => !x.GenreIds.Any(excluded.Contains)).GroupBy(x => x.Id).OrderByDescending(x => x.Max(c => c.VoteCount)).ThenBy(x => x.First().Name).Take(options.Value.TvCount).Select(x => new TvRole { Name = x.First().Name, Year = x.First().Year, PosterPath = x.First().PosterPath, Character = string.Join(", ", x.Select(c => CharacterName.Clean(c.Character)).OfType<string>().Distinct()), EpisodeCount = x.Sum(c => c.EpisodeCount) })];
+        return [.. credits.Cast.Where(x => !x.GenreIds.Any(excluded.Contains)).GroupBy(x => x.Id).OrderByDescending(x => x.Max(c => c.VoteCount)).ThenBy(x => x.First().Name).Take(options.Value.TvCount).Select(x => new TvRole { TMDbId = x.Key, Name = x.First().Name, Year = x.First().Year, PosterPath = x.First().PosterPath, Character = string.Join(", ", x.Select(c => CharacterName.Clean(c.Character)).OfType<string>().Distinct()), EpisodeCount = x.Sum(c => c.EpisodeCount) })];
     }
 
     /// <summary>

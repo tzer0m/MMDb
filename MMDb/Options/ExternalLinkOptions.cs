@@ -11,6 +11,11 @@ public class ExternalLinkOptions
     public string TMDb { get; set; } = string.Empty;
 
     /// <summary>
+    /// The TMDb TV show page, with {0} as the TMDb ID.
+    /// </summary>
+    public string TMDbTv { get; set; } = string.Empty;
+
+    /// <summary>
     /// The IMDb film page, with {0} as the IMDb ID.
     /// </summary>
     public string IMDb { get; set; } = string.Empty;

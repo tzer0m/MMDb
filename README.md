@@ -9,6 +9,7 @@ My Movie Database: a self-hosted site for keeping my film ratings, built with AS
 - **Home**: a searchable, sortable table of every rated film with posters, my rating (MR) and the community rating (CR), plus bar charts of both rating distributions. Searching for a film that isn't in the list offers to add it.
 - **Film pages**: poster, runtime, watched date, overview, my rating and the community rating, individual IMDb, TMDb, Rotten Tomatoes and Metacritic ratings linking to each site, and the director and top five cast with the other films of theirs I've rated.
 - **Person pages**: photo, dates, birthplace and a short biography, average ratings, every film of theirs I've rated, and their best known TV shows with their character names.
+- **TV show pages** (signed in): poster, years, seasons and episodes, overview, TMDb rating, IMDb and TMDb links, and the main cast with my rated films each of them is in.
 - **Add and edit**: search TMDb, pick a film, rate it and set the watched date. Ratings are pushed to the film's Critics Rating in Jellyfin.
 - **Community rating (CR)**: the average of the TMDb, IMDb, Rotten Tomatoes and Metacritic ratings on a 10-point scale, using whichever are available.
 - **Background refresh**: a daily job refreshes each film's IMDb, Rotten Tomatoes and Metacritic ratings from OMDb once they're over 7 days old.
