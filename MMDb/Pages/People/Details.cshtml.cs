@@ -41,6 +41,11 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
     public Dictionary<int, string> Roles { get; set; } = [];
 
     /// <summary>
+    /// Their billing position on each film they acted in, keyed by film ID, starting at 1.
+    /// </summary>
+    public Dictionary<int, int> Billing { get; set; } = [];
+
+    /// <summary>
     /// Their top rated films on TMDb, including ones I have seen.
     /// </summary>
     public List<TopRatedFilm> TopRated { get; set; } = [];
@@ -173,6 +178,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
         List<FilmCredit> credits = await db.FilmCredits.AsNoTracking().Include(x => x.Film).Where(x => x.PersonId == id).ToListAsync(cancellationToken);
         List<Film> films = [.. credits.Select(x => x.Film).DistinctBy(x => x.FilmId)];
         Roles = credits.GroupBy(x => x.FilmId).ToDictionary(x => x.Key, x => string.Join(", ", x.OrderBy(c => c.Role).Select(c => c.Role == CreditRole.Director ? "Director" : c.Character ?? "Cast")));
+        Billing = credits.Where(x => x.Role == CreditRole.Cast).GroupBy(x => x.FilmId).ToDictionary(x => x.Key, x => x.Min(c => c.Order) + 1);
         TMDbPersonCredits? tmdbCredits = await filmPeople.GetPersonCreditsAsync(id, cancellationToken);
         if (tmdbCredits is not null)
         {
@@ -184,6 +190,10 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
             foreach (Film film in extra)
             {
                 Roles[film.FilmId] = DescribeRole(all.Where(x => x.Id == film.TMDbId));
+                if (all.Where(x => x.Id == film.TMDbId).Min(x => x.Order) is int order)
+                {
+                    Billing[film.FilmId] = order + 1;
+                }
             }
             films.AddRange(extra);
         }

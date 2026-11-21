@@ -1,11 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using MMDb.Data;
 using MMDb.Helpers;
 using MMDb.Models;
 using MMDb.Models.OMDb;
 using MMDb.Models.TMDb;
-using MMDb.Options;
 
 namespace MMDb.Services;
 
@@ -15,7 +13,7 @@ namespace MMDb.Services;
 /// <param name="db">The database context.</param>
 /// <param name="tmdb">The TMDb client.</param>
 /// <param name="omdb">The OMDb client.</param>
-public class FilmDataService(MMDbContext db, TMDbClient tmdb, OMDbClient omdb, IOptions<PeopleOptions> options)
+public class FilmDataService(MMDbContext db, TMDbClient tmdb, OMDbClient omdb)
 {
     /// <summary>
     /// Copies a movie's details and credits from TMDb onto a film, returning false if TMDb has no such movie.
@@ -95,7 +93,7 @@ public class FilmDataService(MMDbContext db, TMDbClient tmdb, OMDbClient omdb, I
     }
 
     /// <summary>
-    /// Syncs a film's director and top 10 cast credits, creating or updating the people involved.
+    /// Syncs a film's director and full cast credits, creating or updating the people involved.
     /// </summary>
     /// <param name="film">The film to update.</param>
     /// <param name="crew">The crew from TMDb.</param>
@@ -104,7 +102,7 @@ public class FilmDataService(MMDbContext db, TMDbClient tmdb, OMDbClient omdb, I
     private async Task ApplyCreditsAsync(Film film, List<TMDbCrewMember> crew, List<TMDbCastMember> cast, CancellationToken cancellationToken)
     {
         List<(int PersonId, string Name, string? ProfilePath, CreditRole Role, int Order, string? Character)> wanted = [.. crew.Where(x => x.Job == "Director").DistinctBy(x => x.Id).Select((x, index) => (x.Id, x.Name, x.ProfilePath, CreditRole.Director, index, (string?)null))];
-        wanted.AddRange(cast.OrderBy(x => x.Order).DistinctBy(x => x.Id).Take(options.Value.CastCount).Select(x => (x.Id, x.Name, x.ProfilePath, CreditRole.Cast, x.Order, CharacterName.Clean(x.Character))));
+        wanted.AddRange(cast.OrderBy(x => x.Order).DistinctBy(x => x.Id).Select(x => (x.Id, x.Name, x.ProfilePath, CreditRole.Cast, x.Order, CharacterName.Clean(x.Character))));
         List<int> personIds = [.. wanted.Select(x => x.PersonId).Distinct()];
         Dictionary<int, Person> people = db.People.Local.Where(x => personIds.Contains(x.PersonId)).ToDictionary(x => x.PersonId);
         List<int> untracked = [.. personIds.Where(x => !people.ContainsKey(x))];

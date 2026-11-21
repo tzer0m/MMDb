@@ -41,6 +41,11 @@ public class TMDbPersonCredit
     public string? Character { get; set; }
 
     /// <summary>
+    /// The billing order, lowest first, for cast credits.
+    /// </summary>
+    public int? Order { get; set; }
+
+    /// <summary>
     /// The job, for crew credits, e.g. Director.
     /// </summary>
     public string? Job { get; set; }

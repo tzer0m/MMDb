@@ -66,6 +66,7 @@
             <th class="d-none d-md-table-cell">Title</th>
             <th class="d-none d-md-table-cell">Year</th>
             <th class="d-none d-md-table-cell">Role</th>
+            <th class="d-none d-md-table-cell text-center" title="Billing Order">#</th>
             <th class="d-none d-md-table-cell text-center" title="My Rating">MR</th>
             <th class="d-none d-md-table-cell text-center" title="Community Rating">CR</th>
             <th class="d-none d-md-table-cell text-center" title="My Rating minus Community Rating">&Delta;</th>
@@ -75,6 +76,7 @@
     <tbody>
         @foreach (Film film in Model.Films)
         {
+            int? billing = Model.Billing.TryGetValue(film.FilmId, out int position) ? position : null;
             <tr class="position-relative">
                 <td class="p-1">
                     @if (await Posters.UrlAsync(film.TMDbId, film.IMDbId, film.PosterPath, 92) is string posterUrl)
@@ -91,7 +93,7 @@
                         }
                     </div>
                     <div class="d-flex d-md-none align-items-center gap-2 mt-1">
-                        <span class="text-truncate text-muted small" title="@Model.Roles[film.FilmId]">@(film.Year is int year ? $"{year} \u00b7 " : "")@Model.Roles[film.FilmId]</span>
+                        <span class="text-truncate text-muted small" title="@Model.Roles[film.FilmId]">@(film.Year is int year ? $"{year} \u00b7 " : "")@(billing is int mobileBilling ? $"#{mobileBilling} \u00b7 " : "")@Model.Roles[film.FilmId]</span>
                         <span class="badge text-black ms-auto" style="@RatingColour.StyleForRating(film.Rating)" title="My Rating">@film.Rating</span>
                         @if (film.CommunityRating is double mobileCommunityRating)
                         {
@@ -101,6 +103,7 @@
                 </td>
                 <td class="d-none d-md-table-cell">@film.Year</td>
                 <td class="d-none d-md-table-cell text-truncate" style="max-width: 16rem" title="@Model.Roles[film.FilmId]">@Model.Roles[film.FilmId]</td>
+                <td class="d-none d-md-table-cell text-center">@billing</td>
                 <td class="d-none d-md-table-cell text-center"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.Rating)">@film.Rating</span></td>
                 <td class="d-none d-md-table-cell text-center">
                     @if (film.CommunityRating is double communityRating)

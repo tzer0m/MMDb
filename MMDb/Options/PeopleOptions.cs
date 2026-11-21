@@ -11,7 +11,7 @@ public class PeopleOptions
     public TimeSpan DetailsMaxAge { get; set; } = TimeSpan.FromDays(30);
 
     /// <summary>
-    /// How many top-billed cast members to store and show for each film.
+    /// How many top-billed cast members to show for each film; every cast member is stored.
     /// </summary>
     public int CastCount { get; set; } = 11;
 
