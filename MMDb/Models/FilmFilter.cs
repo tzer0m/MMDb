@@ -23,7 +23,7 @@ public class FilmFilter
     public string? Cast { get; set; }
 
     /// <summary>
-    /// rated for rated films only, or unrated for unrated films in my Jellyfin library only.
+    /// watched for my rated films only, or unwatched for the unrated films in my Jellyfin library only.
     /// </summary>
     public string? Status { get; set; }
 
@@ -95,6 +95,6 @@ public class FilmFilter
     public bool Matches(Film film, HashSet<int>? castFilmIds)
     {
         bool rated = film.FilmId != 0;
-        return FilterMatch.Contains(film.Title, Title) && FilterMatch.Contains(film.Director, Director) && (castFilmIds is null || castFilmIds.Contains(film.FilmId)) && (Status != "rated" || rated) && (Status != "unrated" || !rated) && FilterMatch.InRange(film.Year, MinYear, MaxYear) && FilterMatch.InRange(rated ? film.Rating : (int?)null, MinMr, MaxMr) && FilterMatch.InRange(film.CommunityRating, MinCr, MaxCr) && FilterMatch.InRange(rated ? film.RatingDelta : null, MinDelta, MaxDelta) && FilterMatch.InRange(film.RuntimeMinutes, MinRuntime, MaxRuntime) && FilterMatch.InRange(film.WatchedOn, WatchedFrom, WatchedTo);
+        return FilterMatch.Contains(film.Title, Title) && FilterMatch.Contains(film.Director, Director) && (castFilmIds is null || castFilmIds.Contains(film.FilmId)) && (Status != "watched" || rated) && (Status != "unwatched" || !rated) && FilterMatch.InRange(film.Year, MinYear, MaxYear) && FilterMatch.InRange(rated ? film.Rating : (int?)null, MinMr, MaxMr) && FilterMatch.InRange(film.CommunityRating, MinCr, MaxCr) && FilterMatch.InRange(rated ? film.RatingDelta : null, MinDelta, MaxDelta) && FilterMatch.InRange(film.RuntimeMinutes, MinRuntime, MaxRuntime) && FilterMatch.InRange(film.WatchedOn, WatchedFrom, WatchedTo);
     }
 }

@@ -14,40 +14,40 @@
                 Filters <span id="films-filter-count" class="badge text-bg-secondary"></span>
             </button>
         </div>
+        @if (signedIn)
+        {
+            <div class="btn-group" role="group" aria-label="Watched or Unwatched">
+                <input type="radio" class="btn-check" name="status" id="status-all" value="" checked="@(Model.Filter.Status is not ("watched" or "unwatched"))" />
+                <label class="btn btn-outline-secondary" for="status-all">All</label>
+                <input type="radio" class="btn-check" name="status" id="status-watched" value="watched" checked="@(Model.Filter.Status == "watched")" />
+                <label class="btn btn-outline-secondary" for="status-watched">Watched</label>
+                <input type="radio" class="btn-check" name="status" id="status-unwatched" value="unwatched" checked="@(Model.Filter.Status == "unwatched")" />
+                <label class="btn btn-outline-secondary" for="status-unwatched">Unwatched</label>
+            </div>
+        }
         <div id="films-paging"></div>
     </div>
     <div id="films-filter-panel" class="collapse">
         <div class="row g-2 mb-3">
-            <div class="col-6 col-md-4 col-xl-3">
+            <div class="col-6 col-md-3 col-xl-2">
                 <label for="filter-director" class="form-label small mb-1">Director</label>
-                <input type="search" id="filter-director" name="director" value="@Model.Filter.Director" class="form-control" placeholder="Directed by" />
+                <input type="search" id="filter-director" name="director" value="@Model.Filter.Director" class="form-control form-control-sm" placeholder="Directed by" />
             </div>
-            <div class="col-6 col-md-4 col-xl-3">
+            <div class="col-6 col-md-3 col-xl-2">
                 <label for="filter-cast" class="form-label small mb-1">Cast</label>
-                <input type="search" id="filter-cast" name="cast" value="@Model.Filter.Cast" class="form-control" placeholder="Starring" />
+                <input type="search" id="filter-cast" name="cast" value="@Model.Filter.Cast" class="form-control form-control-sm" placeholder="Starring" />
             </div>
-            @if (signedIn)
-            {
-                <div class="col-6 col-md-4 col-xl-3">
-                    <label for="filter-status" class="form-label small mb-1">Status</label>
-                    <select id="filter-status" name="status" class="form-select">
-                        <option value="">All</option>
-                        <option value="rated" selected="@(Model.Filter.Status == "rated")">Rated</option>
-                        <option value="unrated" selected="@(Model.Filter.Status == "unrated")">Unrated in Library</option>
-                    </select>
-                </div>
-            }
             @{ RangeFilter("Year", "Year", Model.Filter.MinYear, Model.Filter.MaxYear, "1", null, null); }
             @{ RangeFilter("My Rating", "Mr", Model.Filter.MinMr, Model.Filter.MaxMr, "1", "1", "10"); }
             @{ RangeFilter("Community Rating", "Cr", Model.Filter.MinCr, Model.Filter.MaxCr, "0.1", "0", "10"); }
             @{ RangeFilter("Delta", "Delta", Model.Filter.MinDelta, Model.Filter.MaxDelta, "0.1", null, null); }
             @{ RangeFilter("Runtime (Minutes)", "Runtime", Model.Filter.MinRuntime, Model.Filter.MaxRuntime, "1", "0", null); }
-            <div class="col-12 col-md-8 col-xl-6">
+            <div class="col-12 col-md-6 col-xl-4">
                 <label for="filter-watched-from" class="form-label small mb-1">Watched</label>
-                <div class="input-group">
-                    <input type="date" id="filter-watched-from" name="watchedFrom" value="@Model.Filter.WatchedFrom?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" class="form-control" aria-label="Watched From" />
+                <div class="input-group input-group-sm">
+                    <input type="date" id="filter-watched-from" name="watchedFrom" value="@Model.Filter.WatchedFrom?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" class="form-control form-control-sm" aria-label="Watched From" />
                     <span class="input-group-text">to</span>
-                    <input type="date" name="watchedTo" value="@Model.Filter.WatchedTo?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" class="form-control" aria-label="Watched To" />
+                    <input type="date" name="watchedTo" value="@Model.Filter.WatchedTo?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" class="form-control form-control-sm" aria-label="Watched To" />
                 </div>
             </div>
             <div class="col-12 d-flex justify-content-end">
@@ -76,11 +76,11 @@
 @{
     void RangeFilter(string label, string name, double? min, double? max, string step, string? lowest, string? highest)
     {
-        <div class="col-6 col-md-4 col-xl-3">
+        <div class="col-6 col-md-3 col-xl-2">
             <label for="filter-min-@name" class="form-label small mb-1">@label</label>
-            <div class="input-group">
-                <input type="number" id="filter-min-@name" name="min@(name)" value="@min?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" max="@highest" class="form-control" placeholder="Min" aria-label="Minimum @label" />
-                <input type="number" name="max@(name)" value="@max?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" max="@highest" class="form-control" placeholder="Max" aria-label="Maximum @label" />
+            <div class="input-group input-group-sm">
+                <input type="number" id="filter-min-@name" name="min@(name)" value="@min?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" max="@highest" class="form-control form-control-sm" placeholder="Min" aria-label="Minimum @label" />
+                <input type="number" name="max@(name)" value="@max?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" max="@highest" class="form-control form-control-sm" placeholder="Max" aria-label="Maximum @label" />
             </div>
         </div>
     }

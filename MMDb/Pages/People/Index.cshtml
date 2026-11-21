@@ -21,13 +21,13 @@
     </div>
     <div id="talent-filter-panel" class="collapse">
         <div class="row g-2 mb-3">
-            <div class="col-6 col-md-4 col-xl-3">
+            <div class="col-6 col-md-3 col-xl-2">
                 <label for="filter-film" class="form-label small mb-1">Film Title</label>
-                <input type="search" id="filter-film" name="film" value="@Model.Filter.Film" class="form-control" placeholder="Appeared in" />
+                <input type="search" id="filter-film" name="film" value="@Model.Filter.Film" class="form-control form-control-sm" placeholder="Appeared in" />
             </div>
-            <div class="col-6 col-md-4 col-xl-3">
+            <div class="col-6 col-md-3 col-xl-2">
                 <label for="filter-role" class="form-label small mb-1">Role</label>
-                <select id="filter-role" name="role" class="form-select">
+                <select id="filter-role" name="role" class="form-select form-select-sm">
                     <option value="">Any</option>
                     <option value="D" selected="@(Model.Filter.Role == "D")">Director</option>
                     <option value="A" selected="@(Model.Filter.Role == "A")">Actor</option>
@@ -65,11 +65,11 @@
 @{
     void RangeFilter(string label, string name, double? min, double? max, string step, string? lowest)
     {
-        <div class="col-6 col-md-4 col-xl-3">
+        <div class="col-6 col-md-3 col-xl-2">
             <label for="filter-min-@name" class="form-label small mb-1">@label</label>
-            <div class="input-group">
-                <input type="number" id="filter-min-@name" name="min@(name)" value="@min?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" class="form-control" placeholder="Min" aria-label="Minimum @label" />
-                <input type="number" name="max@(name)" value="@max?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" class="form-control" placeholder="Max" aria-label="Maximum @label" />
+            <div class="input-group input-group-sm">
+                <input type="number" id="filter-min-@name" name="min@(name)" value="@min?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" class="form-control form-control-sm" placeholder="Min" aria-label="Minimum @label" />
+                <input type="number" name="max@(name)" value="@max?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" class="form-control form-control-sm" placeholder="Max" aria-label="Maximum @label" />
             </div>
         </div>
     }
