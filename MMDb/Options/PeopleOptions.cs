@@ -21,6 +21,11 @@ public class PeopleOptions
     public int TopRatedCount { get; set; } = 10;
 
     /// <summary>
+    /// How high an actor must be billed for a film to count as a lead role, e.g. 3 for the top 3.
+    /// </summary>
+    public int LeadCount { get; set; } = 3;
+
+    /// <summary>
     /// The fewest TMDb votes a film needs to count towards a person's top rated films.
     /// </summary>
     public int TopRatedMinVotes { get; set; } = 500;

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using MMDb.Helpers;
 
 namespace MMDb.Models;
@@ -41,6 +42,22 @@ public class TalentSummary
     /// The average community rating across their films that have one.
     /// </summary>
     public double? AverageCommunityRating { get; set; }
+
+    /// <summary>
+    /// How many of their films they were billed as a lead in.
+    /// </summary>
+    public int Leads { get; set; }
+
+    /// <summary>
+    /// My average rating minus the average community rating, if there is one.
+    /// </summary>
+    public double? Delta => AverageCommunityRating is double communityRating ? Math.Round(AverageMyRating - communityRating, 1) : null;
+
+    /// <summary>
+    /// Their films I have rated, used for filtering by title and year.
+    /// </summary>
+    [JsonIgnore]
+    public List<Film> Films { get; set; } = [];
 
     /// <summary>
     /// The background colour for my average rating.

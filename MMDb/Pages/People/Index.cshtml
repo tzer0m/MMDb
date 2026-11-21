@@ -1,5 +1,6 @@
 ﻿@page "/talent"
 @model MMDb.Pages.People.IndexModel
+@using System.Globalization
 @using Microsoft.Extensions.Options
 @using MMDb.Options
 @inject IOptions<TMDbOptions> TMDbOptions
@@ -8,27 +9,42 @@
     string imageBaseUrl = TMDbOptions.Value.ImageBaseUrl;
 }
 
-<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
-    <form id="talent-search" class="input-group flex-grow-1 w-auto">
-        <input type="search" id="talent-search-input" class="form-control" placeholder="Search Talent" aria-label="Search Talent" />
-        <select id="talent-role" class="form-select flex-grow-0 w-auto" aria-label="Filter by Role">
-            <option value="">All</option>
-            <option value="D">Directors</option>
-            <option value="A">Actors</option>
-        </select>
-        <select id="talent-min-films" class="form-select flex-grow-0 w-auto" aria-label="Minimum Films">
-            <option value="1">Any Films</option>
-            <option value="2">2+ Films</option>
-            <option value="3">3+ Films</option>
-            <option value="5">5+ Films</option>
-            <option value="10">10+ Films</option>
-        </select>
-        <button type="submit" class="btn btn-outline-secondary d-flex align-items-center" title="Search" aria-label="Search">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0" /></svg>
-        </button>
-    </form>
-    <div id="talent-paging"></div>
-</div>
+<form id="talent-filters" autocomplete="off">
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <div class="input-group flex-grow-1 w-auto">
+            <input type="search" name="name" value="@Model.Filter.Name" class="form-control" placeholder="Search Talent" aria-label="Search Talent" />
+            <button type="button" id="talent-filter-toggle" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-bs-toggle="collapse" data-bs-target="#talent-filter-panel" aria-controls="talent-filter-panel" aria-expanded="false">
+                Filters <span id="talent-filter-count" class="badge text-bg-secondary"></span>
+            </button>
+        </div>
+        <div id="talent-paging"></div>
+    </div>
+    <div id="talent-filter-panel" class="collapse">
+        <div class="row g-2 mb-3">
+            <div class="col-6 col-md-4 col-xl-3">
+                <label for="filter-film" class="form-label small mb-1">Film Title</label>
+                <input type="search" id="filter-film" name="film" value="@Model.Filter.Film" class="form-control" placeholder="Appeared in" />
+            </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <label for="filter-role" class="form-label small mb-1">Role</label>
+                <select id="filter-role" name="role" class="form-select">
+                    <option value="">Any</option>
+                    <option value="D" selected="@(Model.Filter.Role == "D")">Director</option>
+                    <option value="A" selected="@(Model.Filter.Role == "A")">Actor</option>
+                </select>
+            </div>
+            @{ RangeFilter("Films", "Films", Model.Filter.MinFilms, Model.Filter.MaxFilms, "1", "0"); }
+            @{ RangeFilter("My Rating", "Mr", Model.Filter.MinMr, Model.Filter.MaxMr, "0.1", "1"); }
+            @{ RangeFilter("Community Rating", "Cr", Model.Filter.MinCr, Model.Filter.MaxCr, "0.1", "0"); }
+            @{ RangeFilter("Delta", "Delta", Model.Filter.MinDelta, Model.Filter.MaxDelta, "0.1", null); }
+            @{ RangeFilter($"Leads (Top {Model.LeadCount})", "Leads", Model.Filter.MinLeads, Model.Filter.MaxLeads, "1", "0"); }
+            @{ RangeFilter("Film Year", "Year", Model.Filter.MinYear, Model.Filter.MaxYear, "1", null); }
+            <div class="col-12 d-flex justify-content-end">
+                <button type="button" id="talent-filter-clear" class="btn btn-sm btn-outline-secondary">Clear Filters</button>
+            </div>
+        </div>
+    </div>
+</form>
 
 <table id="talent" class="table table-hover align-middle w-100 fs-5 film-table">
     <thead>
@@ -37,12 +53,27 @@
             <th class="d-none d-md-table-cell">Name</th>
             <th class="d-none d-md-table-cell text-center">Films</th>
             <th class="d-none d-md-table-cell text-center" title="D: director, A: actor">Role</th>
+            <th class="d-none d-md-table-cell text-center" title="Films billed in the top @Model.LeadCount">Leads</th>
             <th class="d-none d-md-table-cell text-center" title="Average My Rating">MR</th>
             <th class="d-none d-md-table-cell text-center" title="Average Community Rating">CR</th>
+            <th class="d-none d-md-table-cell text-center" title="Average My Rating minus Community Rating">&Delta;</th>
         </tr>
     </thead>
     <tbody></tbody>
 </table>
+
+@{
+    void RangeFilter(string label, string name, double? min, double? max, string step, string? lowest)
+    {
+        <div class="col-6 col-md-4 col-xl-3">
+            <label for="filter-min-@name" class="form-label small mb-1">@label</label>
+            <div class="input-group">
+                <input type="number" id="filter-min-@name" name="min@(name)" value="@min?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" class="form-control" placeholder="Min" aria-label="Minimum @label" />
+                <input type="number" name="max@(name)" value="@max?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" class="form-control" placeholder="Max" aria-label="Maximum @label" />
+            </div>
+        </div>
+    }
+}
 
 @section Styles {
     <link rel="stylesheet" href="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.css" />
@@ -57,17 +88,23 @@
     <script>
         const imageBaseUrl = '@(imageBaseUrl)w92';
         const personUrl = '@Url.Content("~/talent/")';
-        const searchInput = document.getElementById('talent-search-input');
-        const roleFilter = document.getElementById('talent-role');
-        const minFilms = document.getElementById('talent-min-films');
+        const form = document.getElementById('talent-filters');
+        const panel = document.getElementById('talent-filter-panel');
+        const filterCount = document.getElementById('talent-filter-count');
+        const defaultOrder = [[2, 'desc'], [1, 'asc']];
         const escapeHtml = text => String(text).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
         const ratingBadge = (rating, colour, classes, title) => rating == null ? '' : `<span class="badge ${classes} text-black" style="background-color: ${colour}"${title ? ` title="${title}"` : ''}>${rating.toFixed(1)}</span>`;
-        // The server searches, filters, sorts and pages, so only one page of rows is ever loaded.
+        // The form fields that have a value, which are sent with each request and kept in the address bar.
+        const filterValues = () => [...new FormData(form)].filter(([, value]) => value.trim() !== '');
+        const params = new URLSearchParams(location.search);
+        const sortColumn = Number(params.get('sort'));
+        const initialOrder = sortColumn >= 1 && sortColumn <= 7 ? [[sortColumn, params.get('dir') === 'asc' ? 'asc' : 'desc']] : defaultOrder;
+        // The server filters, sorts and pages, so only one page of rows is ever loaded.
         const talent = new DataTable('#talent', {
             serverSide: true,
-            ajax: { url: '@Url.Page("/People/Index", "Data")', data: request => { request.role = roleFilter.value; request.minFilms = minFilms.value; } },
-            search: { search: searchInput.value },
-            order: [[2, 'desc'], [1, 'asc']],
+            searching: false,
+            ajax: { url: '@Url.Page("/People/Index", "Data")', data: request => { for (const [key, value] of filterValues()) { request[key] = value; } } },
+            order: initialOrder,
             autoWidth: false,
             pageLength: 100,
             createdRow: row => row.classList.add('position-relative'),
@@ -76,30 +113,52 @@
                 { data: 'name', createdCell: cell => cell.style.cssText = 'max-width: 0; width: 100%', render: (name, type, person) => `<div class="text-truncate" title="${escapeHtml(name)}"><a href="${personUrl}${person.personId}" class="stretched-link text-reset text-decoration-none">${escapeHtml(name)}</a></div><div class="d-flex d-md-none align-items-center gap-2 mt-1"><span class="text-truncate text-muted small">${person.filmCount} ${person.filmCount === 1 ? 'film' : 'films'} &middot; ${person.roles}</span>${ratingBadge(person.averageMyRating, person.myRatingColour, 'ms-auto', 'Average My Rating')}${ratingBadge(person.averageCommunityRating, person.communityRatingColour, '', 'Average Community Rating')}</div>` },
                 { data: 'filmCount', className: 'd-none d-md-table-cell text-center' },
                 { data: 'roles', className: 'd-none d-md-table-cell text-center text-nowrap' },
+                { data: 'leads', className: 'd-none d-md-table-cell text-center' },
                 { data: 'averageMyRating', className: 'd-none d-md-table-cell text-center', render: (rating, type, person) => ratingBadge(rating, person.myRatingColour, 'fs-5') },
-                { data: 'averageCommunityRating', className: 'd-none d-md-table-cell text-center', render: (rating, type, person) => ratingBadge(rating, person.communityRatingColour, 'fs-5') }
+                { data: 'averageCommunityRating', className: 'd-none d-md-table-cell text-center', render: (rating, type, person) => ratingBadge(rating, person.communityRatingColour, 'fs-5') },
+                { data: 'delta', className: 'd-none d-md-table-cell text-center text-nowrap', render: delta => delta == null ? '' : `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` }
             ],
             language: { emptyTable: 'No talent yet.', zeroRecords: 'No matching talent.', info: '_START_ to _END_ of _TOTAL_', infoEmpty: '0 to 0 of 0', infoFiltered: '(_MAX_)' },
             layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' }
         });
         document.getElementById('talent-paging').append(document.querySelector('#talent_wrapper .dt-paging'));
-        // Re-query with the current control values; typing waits briefly so each keystroke doesn't hit the server.
-        const applyFilters = () => talent.search(searchInput.value).draw();
-        let searchTimer;
-        searchInput.addEventListener('input', () => {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(applyFilters, 300);
+        // After each load, put the filters and sort in the address bar and count the active panel filters.
+        talent.on('draw', () => {
+            const query = new URLSearchParams(filterValues());
+            const order = talent.order();
+            if (JSON.stringify(order) !== JSON.stringify(defaultOrder)) {
+                query.set('sort', order[0][0]);
+                query.set('dir', order[0][1]);
+            }
+            history.replaceState(null, '', query.size > 0 ? `?${query}` : location.pathname);
+            filterCount.textContent = filterValues().filter(([key]) => key !== 'name').length || '';
         });
-        roleFilter.addEventListener('change', applyFilters);
-        minFilms.addEventListener('change', applyFilters);
-        document.getElementById('talent-search').addEventListener('submit', event => {
+        // Show the filters on larger screens, or whenever some are already set.
+        if (window.matchMedia('(min-width: 768px)').matches || filterValues().some(([key]) => key !== 'name')) {
+            panel.classList.add('show');
+            document.getElementById('talent-filter-toggle').setAttribute('aria-expanded', 'true');
+        }
+        // Reload after typing pauses or a dropdown changes, so each keystroke doesn't hit the server.
+        let filterTimer;
+        const reload = () => {
+            clearTimeout(filterTimer);
+            talent.draw();
+        };
+        form.addEventListener('input', () => {
+            clearTimeout(filterTimer);
+            filterTimer = setTimeout(reload, 300);
+        });
+        form.addEventListener('submit', event => {
             event.preventDefault();
-            clearTimeout(searchTimer);
-            applyFilters();
+            reload();
+        });
+        document.getElementById('talent-filter-clear').addEventListener('click', () => {
+            panel.querySelectorAll('input, select').forEach(field => field.value = '');
+            reload();
         });
         window.addEventListener('pageshow', event => {
             if (event.persisted) {
-                applyFilters();
+                reload();
             }
         });
     </script>

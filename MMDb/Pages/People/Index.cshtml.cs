@@ -1,17 +1,19 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using MMDb.Data;
-using MMDb.Helpers;
 using MMDb.Models;
+using MMDb.Options;
 
 namespace MMDb.Pages.People;
 
 /// <summary>
-/// Lists every director and actor in my rated films, with totals across those films, a page at a time.
+/// Lists every director and actor in my rated films, with totals across those films, filtered and a page at a time.
 /// </summary>
 /// <param name="db">The database context.</param>
-public class IndexModel(MMDbContext db) : PageModel
+/// <param name="options">The people options.</param>
+public class IndexModel(MMDbContext db, IOptions<PeopleOptions> options) : PageModel
 {
     /// <summary>
     /// The most rows a single page request can return.
@@ -19,19 +21,36 @@ public class IndexModel(MMDbContext db) : PageModel
     private const int MaxPageLength = 500;
 
     /// <summary>
-    /// Returns one page of talent for the table, searched, filtered and sorted from the DataTables request.
+    /// The filters from the query string, used to fill in the form.
     /// </summary>
+    public TalentFilter Filter { get; set; } = new();
+
+    /// <summary>
+    /// How high an actor must be billed for a film to count as a lead role.
+    /// </summary>
+    public int LeadCount => options.Value.LeadCount;
+
+    /// <summary>
+    /// Shows the page with the form filled in from the query string; the rows are loaded separately.
+    /// </summary>
+    /// <param name="filter">The filters from the query string.</param>
+    public void OnGet([FromQuery] TalentFilter filter)
+    {
+        Filter = filter;
+    }
+
+    /// <summary>
+    /// Returns one page of talent for the table, filtered and sorted from the DataTables request.
+    /// </summary>
+    /// <param name="filter">The filters from the form.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task<JsonResult> OnGetDataAsync(CancellationToken cancellationToken)
+    public async Task<JsonResult> OnGetDataAsync([FromQuery] TalentFilter filter, CancellationToken cancellationToken)
     {
         List<TalentSummary> talent = await LoadTalentAsync(cancellationToken);
-        string search = SearchText.Simplify(Request.Query["search[value]"].ToString());
-        string role = Request.Query["role"].ToString();
-        int minFilms = int.TryParse(Request.Query["minFilms"].ToString(), out int parsedMinFilms) ? parsedMinFilms : 1;
         int draw = int.TryParse(Request.Query["draw"].ToString(), out int parsedDraw) ? parsedDraw : 0;
         int start = int.TryParse(Request.Query["start"].ToString(), out int parsedStart) ? Math.Max(0, parsedStart) : 0;
         int length = int.TryParse(Request.Query["length"].ToString(), out int parsedLength) && parsedLength is > 0 and <= MaxPageLength ? parsedLength : MaxPageLength;
-        List<TalentSummary> matches = [.. Sort(talent.Where(x => x.FilmCount >= minFilms && (role.Length == 0 || x.Roles.Contains(role)) && (search.Length == 0 || SearchText.Simplify(x.Name).Contains(search, StringComparison.OrdinalIgnoreCase))))];
+        List<TalentSummary> matches = [.. Sort(talent.Where(filter.Matches))];
         return new JsonResult(new TalentPage { Draw = draw, RecordsTotal = talent.Count, RecordsFiltered = matches.Count, Data = [.. matches.Skip(start).Take(length)] });
     }
 
@@ -41,8 +60,8 @@ public class IndexModel(MMDbContext db) : PageModel
     /// <param name="cancellationToken">The cancellation token.</param>
     private async Task<List<TalentSummary>> LoadTalentAsync(CancellationToken cancellationToken)
     {
-        Dictionary<int, Film> films = await db.Films.AsNoTracking().Select(x => new Film { FilmId = x.FilmId, Rating = x.Rating, TMDbRating = x.TMDbRating, IMDbRating = x.IMDbRating, RottenTomatoes = x.RottenTomatoes, Metacritic = x.Metacritic }).ToDictionaryAsync(x => x.FilmId, cancellationToken);
-        List<FilmCredit> credits = await db.FilmCredits.AsNoTracking().Select(x => new FilmCredit { FilmId = x.FilmId, PersonId = x.PersonId, Role = x.Role, Person = new Person { PersonId = x.PersonId, Name = x.Person.Name, ProfilePath = x.Person.ProfilePath } }).ToListAsync(cancellationToken);
+        Dictionary<int, Film> films = await db.Films.AsNoTracking().Select(x => new Film { FilmId = x.FilmId, Title = x.Title, Year = x.Year, Rating = x.Rating, TMDbRating = x.TMDbRating, IMDbRating = x.IMDbRating, RottenTomatoes = x.RottenTomatoes, Metacritic = x.Metacritic }).ToDictionaryAsync(x => x.FilmId, cancellationToken);
+        List<FilmCredit> credits = await db.FilmCredits.AsNoTracking().Select(x => new FilmCredit { FilmId = x.FilmId, PersonId = x.PersonId, Role = x.Role, Order = x.Order, Person = new Person { PersonId = x.PersonId, Name = x.Person.Name, ProfilePath = x.Person.ProfilePath } }).ToListAsync(cancellationToken);
         return [.. credits.GroupBy(x => x.PersonId).Select(x => ToSummary(x, films))];
     }
 
@@ -61,7 +80,9 @@ public class IndexModel(MMDbContext db) : PageModel
                 1 => x => x.Name,
                 3 => x => x.Roles,
                 4 => x => x.AverageMyRating,
-                5 => x => x.AverageCommunityRating ?? -1,
+                5 => x => x.AverageCommunityRating ?? double.MinValue,
+                6 => x => x.Delta ?? double.MinValue,
+                7 => x => x.Leads,
                 _ => x => x.FilmCount
             };
             sorted = sorted is null ? descending ? talent.OrderByDescending(key) : talent.OrderBy(key) : descending ? sorted.ThenByDescending(key) : sorted.ThenBy(key);
@@ -74,11 +95,12 @@ public class IndexModel(MMDbContext db) : PageModel
     /// </summary>
     /// <param name="credits">The person's credits.</param>
     /// <param name="films">Every rated film, keyed by film ID.</param>
-    private static TalentSummary ToSummary(IGrouping<int, FilmCredit> credits, Dictionary<int, Film> films)
+    private TalentSummary ToSummary(IGrouping<int, FilmCredit> credits, Dictionary<int, Film> films)
     {
         List<Film> personFilms = [.. credits.Select(x => x.FilmId).Distinct().Select(x => films[x])];
         List<double> communityRatings = [.. personFilms.Where(x => x.CommunityRating is not null).Select(x => x.CommunityRating!.Value)];
         Person person = credits.First().Person;
-        return new TalentSummary { PersonId = person.PersonId, Name = person.Name, ProfilePath = person.ProfilePath, FilmCount = personFilms.Count, Roles = string.Join("/", credits.Select(x => x.Role).Distinct().Order().Select(x => x == CreditRole.Director ? "D" : "A")), AverageMyRating = Math.Round(personFilms.Average(x => x.Rating), 1), AverageCommunityRating = communityRatings.Count == 0 ? null : Math.Round(communityRatings.Average(), 1) };
+        int leads = credits.Where(x => x.Role == CreditRole.Cast && x.Order < options.Value.LeadCount).Select(x => x.FilmId).Distinct().Count();
+        return new TalentSummary { PersonId = person.PersonId, Name = person.Name, ProfilePath = person.ProfilePath, FilmCount = personFilms.Count, Roles = string.Join("/", credits.Select(x => x.Role).Distinct().Order().Select(x => x == CreditRole.Director ? "D" : "A")), AverageMyRating = Math.Round(personFilms.Average(x => x.Rating), 1), AverageCommunityRating = communityRatings.Count == 0 ? null : Math.Round(communityRatings.Average(), 1), Leads = leads, Films = personFilms };
     }
 }
