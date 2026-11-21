@@ -119,6 +119,11 @@ public class Film
     public List<FilmCredit> Credits { get; set; } = [];
 
     /// <summary>
+    /// The 1 to 100 score from comparisons, if it has been seeded.
+    /// </summary>
+    public FilmScore? FilmScore { get; set; }
+
+    /// <summary>
     /// The average of the TMDb, IMDb, Rotten Tomatoes and Metacritic ratings on a 10-point scale, using whichever are available.
     /// </summary>
     [NotMapped]

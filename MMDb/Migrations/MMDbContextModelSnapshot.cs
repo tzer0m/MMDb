@@ -17,7 +17,7 @@ namespace MMDb.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -109,6 +109,35 @@ namespace MMDb.Migrations
                         });
                 });
 
+            modelBuilder.Entity("MMDb.Models.FilmComparison", b =>
+                {
+                    b.Property<int>("FilmComparisonId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("FilmComparisonId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FilmId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OtherFilmId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Result")
+                        .HasColumnType("integer");
+
+                    b.HasKey("FilmComparisonId");
+
+                    b.HasIndex("OtherFilmId");
+
+                    b.HasIndex("FilmId", "CreatedAt");
+
+                    b.ToTable("FilmComparisons");
+                });
+
             modelBuilder.Entity("MMDb.Models.FilmCredit", b =>
                 {
                     b.Property<int>("FilmId")
@@ -131,6 +160,37 @@ namespace MMDb.Migrations
                     b.HasIndex("PersonId", "Role");
 
                     b.ToTable("FilmCredits");
+                });
+
+            modelBuilder.Entity("MMDb.Models.FilmScore", b =>
+                {
+                    b.Property<int>("FilmId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsAnchor")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSettled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("ResetAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime?>("SettledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("FilmId");
+
+                    b.ToTable("FilmScores", t =>
+                        {
+                            t.HasCheckConstraint("CK_FilmScores_Score", "\"Score\" > 0 AND \"Score\" <= 100");
+                        });
                 });
 
             modelBuilder.Entity("MMDb.Models.LibraryFilm", b =>
@@ -234,6 +294,25 @@ namespace MMDb.Migrations
                     b.ToTable("People");
                 });
 
+            modelBuilder.Entity("MMDb.Models.FilmComparison", b =>
+                {
+                    b.HasOne("MMDb.Models.Film", "Film")
+                        .WithMany()
+                        .HasForeignKey("FilmId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MMDb.Models.Film", "OtherFilm")
+                        .WithMany()
+                        .HasForeignKey("OtherFilmId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Film");
+
+                    b.Navigation("OtherFilm");
+                });
+
             modelBuilder.Entity("MMDb.Models.FilmCredit", b =>
                 {
                     b.HasOne("MMDb.Models.Film", "Film")
@@ -253,9 +332,22 @@ namespace MMDb.Migrations
                     b.Navigation("Person");
                 });
 
+            modelBuilder.Entity("MMDb.Models.FilmScore", b =>
+                {
+                    b.HasOne("MMDb.Models.Film", "Film")
+                        .WithOne("FilmScore")
+                        .HasForeignKey("MMDb.Models.FilmScore", "FilmId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Film");
+                });
+
             modelBuilder.Entity("MMDb.Models.Film", b =>
                 {
                     b.Navigation("Credits");
+
+                    b.Navigation("FilmScore");
                 });
 
             modelBuilder.Entity("MMDb.Models.Person", b =>

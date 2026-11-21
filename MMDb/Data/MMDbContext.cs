@@ -35,6 +35,16 @@ public class MMDbContext(DbContextOptions<MMDbContext> options) : DbContext(opti
     public DbSet<LibraryFilm> LibraryFilms => Set<LibraryFilm>();
 
     /// <summary>
+    /// Films' 1 to 100 scores from comparisons.
+    /// </summary>
+    public DbSet<FilmScore> FilmScores => Set<FilmScore>();
+
+    /// <summary>
+    /// My answers from ranking films against each other.
+    /// </summary>
+    public DbSet<FilmComparison> FilmComparisons => Set<FilmComparison>();
+
+    /// <summary>
     /// Configures the entity model.
     /// </summary>
     /// <param name="modelBuilder">The model builder.</param>
@@ -61,5 +71,12 @@ public class MMDbContext(DbContextOptions<MMDbContext> options) : DbContext(opti
         modelBuilder.Entity<LibraryFilm>().Property(x => x.IMDbId).HasMaxLength(20);
         modelBuilder.Entity<LibraryFilm>().Property(x => x.Title).HasMaxLength(300);
         modelBuilder.Entity<LibraryFilm>().Property(x => x.Director).HasMaxLength(200);
+        modelBuilder.Entity<FilmScore>().HasKey(x => x.FilmId);
+        modelBuilder.Entity<FilmScore>().HasOne(x => x.Film).WithOne(x => x.FilmScore).HasForeignKey<FilmScore>(x => x.FilmId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<FilmScore>().ToTable(x => x.HasCheckConstraint("CK_FilmScores_Score", "\"Score\" > 0 AND \"Score\" <= 100"));
+        modelBuilder.Entity<FilmComparison>().HasOne(x => x.Film).WithMany().HasForeignKey(x => x.FilmId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<FilmComparison>().HasOne(x => x.OtherFilm).WithMany().HasForeignKey(x => x.OtherFilmId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<FilmComparison>().HasIndex(x => new { x.FilmId, x.CreatedAt });
+        modelBuilder.Entity<FilmComparison>().HasIndex(x => x.OtherFilmId);
     }
 }

@@ -26,6 +26,7 @@ builder.Services.AddScoped<FilmDataService>();
 builder.Services.AddScoped<FilmPeopleService>();
 builder.Services.AddScoped<OMDbCacheService>();
 builder.Services.AddScoped<PosterService>();
+builder.Services.AddScoped<RankingService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddHostedService<RatingsRefreshService>();
 builder.Services.AddHealthChecks().AddDbContextCheck<MMDbContext>();
@@ -75,11 +76,12 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizePage("/Films/Search");
 });
 
-// Build the app and apply any pending migrations.
+// Build the app, apply any pending migrations and give any new films a provisional score.
 WebApplication app = builder.Build();
 using (IServiceScope scope = app.Services.CreateScope())
 {
     scope.ServiceProvider.GetRequiredService<MMDbContext>().Database.Migrate();
+    await scope.ServiceProvider.GetRequiredService<RankingService>().EnsureScoresAsync();
 }
 
 // Configure the request pipeline and run.
