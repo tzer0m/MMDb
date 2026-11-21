@@ -282,7 +282,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
     }
 
     /// <summary>
-    /// Handles answers that contradict the current order: the two films they disagree about become unsettled, and the film being ranked starts again.
+    /// Handles answers that contradict the current order: the two films they disagree about become unsettled and stop being anchors, so they're re-ranked like any other film, and the film being ranked starts again.
     /// </summary>
     /// <param name="score">The film's score, tracked.</param>
     /// <param name="state">Its placement state.</param>
@@ -304,6 +304,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         foreach (int filmId in clashing)
         {
             scores[filmId].IsSettled = false;
+            scores[filmId].IsAnchor = false;
             scores[filmId].ResetAt = now;
             scores[filmId].UpdatedAt = now;
         }
