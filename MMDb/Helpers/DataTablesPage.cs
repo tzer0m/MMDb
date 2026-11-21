@@ -1,9 +1,9 @@
-namespace MMDb.Models;
+namespace MMDb.Helpers;
 
 /// <summary>
-/// One page of talent for the talent table, in the shape DataTables expects.
+/// One page of rows for a server-side DataTable, in the shape DataTables expects.
 /// </summary>
-public class TalentPage
+public class DataTablesPage<T>
 {
     /// <summary>
     /// The request counter DataTables sent, echoed back so it can ignore stale responses.
@@ -11,17 +11,17 @@ public class TalentPage
     public int Draw { get; set; }
 
     /// <summary>
-    /// How many people there are before filtering.
+    /// How many rows there are before filtering.
     /// </summary>
     public int RecordsTotal { get; set; }
 
     /// <summary>
-    /// How many people match the current filters.
+    /// How many rows match the current filters.
     /// </summary>
     public int RecordsFiltered { get; set; }
 
     /// <summary>
-    /// The people on this page.
+    /// The rows on this page.
     /// </summary>
-    public List<TalentSummary> Data { get; set; } = [];
+    public List<T> Data { get; set; } = [];
 }

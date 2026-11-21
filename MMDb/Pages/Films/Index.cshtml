@@ -1,0 +1,119 @@
+﻿@page "/films"
+@model MMDb.Pages.Films.IndexModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Films";
+    bool signedIn = User.Identity?.IsAuthenticated == true;
+}
+
+<form id="films-filters" autocomplete="off">
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <div class="input-group flex-grow-1 w-auto">
+            <input type="search" name="title" value="@Model.Filter.Title" class="form-control" placeholder="Search Titles" aria-label="Search Titles" />
+            <button type="button" id="films-filter-toggle" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-bs-toggle="collapse" data-bs-target="#films-filter-panel" aria-controls="films-filter-panel" aria-expanded="false">
+                Filters <span id="films-filter-count" class="badge text-bg-secondary"></span>
+            </button>
+        </div>
+        <div id="films-paging"></div>
+    </div>
+    <div id="films-filter-panel" class="collapse">
+        <div class="row g-2 mb-3">
+            <div class="col-6 col-md-4 col-xl-3">
+                <label for="filter-director" class="form-label small mb-1">Director</label>
+                <input type="search" id="filter-director" name="director" value="@Model.Filter.Director" class="form-control" placeholder="Directed by" />
+            </div>
+            <div class="col-6 col-md-4 col-xl-3">
+                <label for="filter-cast" class="form-label small mb-1">Cast</label>
+                <input type="search" id="filter-cast" name="cast" value="@Model.Filter.Cast" class="form-control" placeholder="Starring" />
+            </div>
+            @if (signedIn)
+            {
+                <div class="col-6 col-md-4 col-xl-3">
+                    <label for="filter-status" class="form-label small mb-1">Status</label>
+                    <select id="filter-status" name="status" class="form-select">
+                        <option value="">All</option>
+                        <option value="rated" selected="@(Model.Filter.Status == "rated")">Rated</option>
+                        <option value="unrated" selected="@(Model.Filter.Status == "unrated")">Unrated in Library</option>
+                    </select>
+                </div>
+            }
+            @{ RangeFilter("Year", "Year", Model.Filter.MinYear, Model.Filter.MaxYear, "1", null, null); }
+            @{ RangeFilter("My Rating", "Mr", Model.Filter.MinMr, Model.Filter.MaxMr, "1", "1", "10"); }
+            @{ RangeFilter("Community Rating", "Cr", Model.Filter.MinCr, Model.Filter.MaxCr, "0.1", "0", "10"); }
+            @{ RangeFilter("Delta", "Delta", Model.Filter.MinDelta, Model.Filter.MaxDelta, "0.1", null, null); }
+            @{ RangeFilter("Runtime (Minutes)", "Runtime", Model.Filter.MinRuntime, Model.Filter.MaxRuntime, "1", "0", null); }
+            <div class="col-12 col-md-8 col-xl-6">
+                <label for="filter-watched-from" class="form-label small mb-1">Watched</label>
+                <div class="input-group">
+                    <input type="date" id="filter-watched-from" name="watchedFrom" value="@Model.Filter.WatchedFrom?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" class="form-control" aria-label="Watched From" />
+                    <span class="input-group-text">to</span>
+                    <input type="date" name="watchedTo" value="@Model.Filter.WatchedTo?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" class="form-control" aria-label="Watched To" />
+                </div>
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+                <button type="button" id="films-filter-clear" class="btn btn-sm btn-outline-secondary">Clear Filters</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<table id="films" class="table table-hover align-middle w-100 fs-5 film-table">
+    <thead>
+        <tr>
+            <th></th>
+            <th>Title</th>
+            <th>Year</th>
+            <th class="d-none d-md-table-cell text-nowrap">Director</th>
+            <th class="text-center" title="My Rating">MR</th>
+            <th class="text-center" title="Community Rating">CR</th>
+            <th class="d-none d-md-table-cell text-center" title="My Rating minus Community Rating">&Delta;</th>
+            <th class="d-none d-sm-table-cell text-nowrap">Watched</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+@{
+    void RangeFilter(string label, string name, double? min, double? max, string step, string? lowest, string? highest)
+    {
+        <div class="col-6 col-md-4 col-xl-3">
+            <label for="filter-min-@name" class="form-label small mb-1">@label</label>
+            <div class="input-group">
+                <input type="number" id="filter-min-@name" name="min@(name)" value="@min?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" max="@highest" class="form-control" placeholder="Min" aria-label="Minimum @label" />
+                <input type="number" name="max@(name)" value="@max?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" max="@highest" class="form-control" placeholder="Max" aria-label="Maximum @label" />
+            </div>
+        </div>
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.css" />
+    <style>
+        #films-paging ul.pagination { margin: 0; }
+    </style>
+}
+
+@section Scripts {
+    <script src="~/lib/datatables.net/dataTables.min.js"></script>
+    <script src="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.js"></script>
+    <script src="~/js/filter-table.js" asp-append-version="true"></script>
+    <script>
+        // Formats a yyyy-MM-dd date as e.g. 5 Nov 2026.
+        const formatDate = date => date ? new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';
+        createFilterTable('films', {
+            ajax: '@Url.Page("/Films/Index", "Data")',
+            order: [[7, 'desc']],
+            columns: [
+                { data: 'posterUrl', orderable: false, createdCell: cell => cell.classList.add('p-1'), render: url => url ? `<img src="${escapeHtml(url)}" alt="" class="rounded" width="43" height="64" loading="lazy" />` : '<div class="photo-placeholder"></div>' },
+                { data: 'title', createdCell: (cell, title) => { cell.classList.add('text-truncate'); cell.style.cssText = 'max-width: 0; width: 100%'; cell.title = title; }, render: (title, type, film) => `<a href="${escapeHtml(film.url)}" class="stretched-link text-reset text-decoration-none">${escapeHtml(title)}</a>` },
+                { data: 'year', render: year => year ?? '' },
+                { data: 'director', className: 'd-none d-md-table-cell text-nowrap', render: director => director ? escapeHtml(director) : '' },
+                { data: 'rating', className: 'text-center', render: (rating, type, film) => rating == null ? '<span class="badge fs-5 bg-secondary text-body" title="Not Rated Yet">#</span>' : ratingBadge(rating, film.ratingColour, 'fs-5', null, 0) },
+                { data: 'communityRating', className: 'text-center', render: (rating, type, film) => ratingBadge(rating, film.communityRatingColour, 'fs-5') },
+                { data: 'delta', className: 'd-none d-md-table-cell text-center text-nowrap', render: formatDelta },
+                { data: 'watchedOn', className: 'd-none d-sm-table-cell text-nowrap', render: formatDate }
+            ],
+            language: { emptyTable: 'No films yet.', zeroRecords: 'No matching films.', info: '_START_ to _END_ of _TOTAL_', infoEmpty: '0 to 0 of 0', infoFiltered: '(_MAX_)' }
+        });
+    </script>
+}

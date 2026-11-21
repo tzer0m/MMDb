@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MMDb.Data;
+using MMDb.Helpers;
 using MMDb.Models;
 using MMDb.Options;
 
@@ -15,11 +16,6 @@ namespace MMDb.Pages.People;
 /// <param name="options">The people options.</param>
 public class IndexModel(MMDbContext db, IOptions<PeopleOptions> options) : PageModel
 {
-    /// <summary>
-    /// The most rows a single page request can return.
-    /// </summary>
-    private const int MaxPageLength = 500;
-
     /// <summary>
     /// The filters from the query string, used to fill in the form.
     /// </summary>
@@ -47,11 +43,10 @@ public class IndexModel(MMDbContext db, IOptions<PeopleOptions> options) : PageM
     public async Task<JsonResult> OnGetDataAsync([FromQuery] TalentFilter filter, CancellationToken cancellationToken)
     {
         List<TalentSummary> talent = await LoadTalentAsync(cancellationToken);
-        int draw = int.TryParse(Request.Query["draw"].ToString(), out int parsedDraw) ? parsedDraw : 0;
-        int start = int.TryParse(Request.Query["start"].ToString(), out int parsedStart) ? Math.Max(0, parsedStart) : 0;
-        int length = int.TryParse(Request.Query["length"].ToString(), out int parsedLength) && parsedLength is > 0 and <= MaxPageLength ? parsedLength : MaxPageLength;
-        List<TalentSummary> matches = [.. Sort(talent.Where(filter.Matches))];
-        return new JsonResult(new TalentPage { Draw = draw, RecordsTotal = talent.Count, RecordsFiltered = matches.Count, Data = [.. matches.Skip(start).Take(length)] });
+        DataTablesRequest request = DataTablesRequest.FromQuery(Request.Query);
+        List<TalentSummary> matches = [.. Sort(request, talent.Where(filter.Matches))];
+        List<TalentSummary> rows = [.. request.PageOf(matches)];
+        return new JsonResult(request.ToPage(rows, talent.Count, matches.Count));
     }
 
     /// <summary>
@@ -66,28 +61,22 @@ public class IndexModel(MMDbContext db, IOptions<PeopleOptions> options) : PageM
     }
 
     /// <summary>
-    /// Sorts talent by the columns in the DataTables request, matched by their data name so columns can be reordered, falling back to most films first, then by name.
+    /// Sorts talent by the requested columns, falling back to most films first, then by name.
     /// </summary>
+    /// <param name="request">The DataTables request.</param>
     /// <param name="talent">The talent to sort.</param>
-    private IEnumerable<TalentSummary> Sort(IEnumerable<TalentSummary> talent)
+    private static IEnumerable<TalentSummary> Sort(DataTablesRequest request, IEnumerable<TalentSummary> talent)
     {
-        IOrderedEnumerable<TalentSummary>? sorted = null;
-        for (int i = 0; int.TryParse(Request.Query[$"order[{i}][column]"].ToString(), out int column); i++)
+        return request.Sort(talent, data => data switch
         {
-            bool descending = Request.Query[$"order[{i}][dir]"].ToString() == "desc";
-            Func<TalentSummary, object> key = Request.Query[$"columns[{column}][data]"].ToString() switch
-            {
-                "name" => x => x.Name,
-                "roles" => x => x.Roles,
-                "leads" => x => x.Leads,
-                "averageMyRating" => x => x.AverageMyRating,
-                "averageCommunityRating" => x => x.AverageCommunityRating ?? double.MinValue,
-                "delta" => x => x.Delta ?? double.MinValue,
-                _ => x => x.FilmCount
-            };
-            sorted = sorted is null ? descending ? talent.OrderByDescending(key) : talent.OrderBy(key) : descending ? sorted.ThenByDescending(key) : sorted.ThenBy(key);
-        }
-        return sorted?.ThenBy(x => x.Name) ?? talent.OrderByDescending(x => x.FilmCount).ThenBy(x => x.Name);
+            "name" => x => x.Name,
+            "roles" => x => x.Roles,
+            "leads" => x => x.Leads,
+            "averageMyRating" => x => x.AverageMyRating,
+            "averageCommunityRating" => x => x.AverageCommunityRating ?? double.MinValue,
+            "delta" => x => x.Delta ?? double.MinValue,
+            _ => x => x.FilmCount
+        })?.ThenBy(x => x.Name) ?? talent.OrderByDescending(x => x.FilmCount).ThenBy(x => x.Name);
     }
 
     /// <summary>

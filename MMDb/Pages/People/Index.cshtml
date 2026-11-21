@@ -85,29 +85,13 @@
 @section Scripts {
     <script src="~/lib/datatables.net/dataTables.min.js"></script>
     <script src="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.js"></script>
+    <script src="~/js/filter-table.js" asp-append-version="true"></script>
     <script>
         const imageBaseUrl = '@(imageBaseUrl)w92';
         const personUrl = '@Url.Content("~/talent/")';
-        const form = document.getElementById('talent-filters');
-        const panel = document.getElementById('talent-filter-panel');
-        const filterCount = document.getElementById('talent-filter-count');
-        const defaultOrder = [[2, 'desc'], [1, 'asc']];
-        const escapeHtml = text => String(text).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
-        const ratingBadge = (rating, colour, classes, title) => rating == null ? '' : `<span class="badge ${classes} text-black" style="background-color: ${colour}"${title ? ` title="${title}"` : ''}>${rating.toFixed(1)}</span>`;
-        // The form fields that have a value, which are sent with each request and kept in the address bar.
-        const filterValues = () => [...new FormData(form)].filter(([, value]) => value.trim() !== '');
-        const params = new URLSearchParams(location.search);
-        const sortColumn = Number(params.get('sort'));
-        const initialOrder = sortColumn >= 1 && sortColumn <= 7 ? [[sortColumn, params.get('dir') === 'asc' ? 'asc' : 'desc']] : defaultOrder;
-        // The server filters, sorts and pages, so only one page of rows is ever loaded.
-        const talent = new DataTable('#talent', {
-            serverSide: true,
-            searching: false,
-            ajax: { url: '@Url.Page("/People/Index", "Data")', data: request => { for (const [key, value] of filterValues()) { request[key] = value; } } },
-            order: initialOrder,
-            autoWidth: false,
-            pageLength: 100,
-            createdRow: row => row.classList.add('position-relative'),
+        createFilterTable('talent', {
+            ajax: '@Url.Page("/People/Index", "Data")',
+            order: [[2, 'desc'], [1, 'asc']],
             columns: [
                 { data: 'profilePath', orderable: false, createdCell: cell => cell.classList.add('p-1'), render: path => path ? `<img src="${imageBaseUrl}${escapeHtml(path)}" alt="" class="rounded object-fit-cover" width="43" height="64" loading="lazy" />` : '<div class="photo-placeholder"></div>' },
                 { data: 'name', createdCell: cell => cell.style.cssText = 'max-width: 0; width: 100%', render: (name, type, person) => `<div class="text-truncate" title="${escapeHtml(name)}"><a href="${personUrl}${person.personId}" class="stretched-link text-reset text-decoration-none">${escapeHtml(name)}</a></div><div class="d-flex d-md-none align-items-center gap-2 mt-1"><span class="text-truncate text-muted small">${person.filmCount} ${person.filmCount === 1 ? 'film' : 'films'} &middot; ${person.roles}</span>${ratingBadge(person.averageMyRating, person.myRatingColour, 'ms-auto', 'Average My Rating')}${ratingBadge(person.averageCommunityRating, person.communityRatingColour, '', 'Average Community Rating')}</div>` },
@@ -116,50 +100,9 @@
                 { data: 'leads', className: 'd-none d-md-table-cell text-center' },
                 { data: 'averageMyRating', className: 'd-none d-md-table-cell text-center', render: (rating, type, person) => ratingBadge(rating, person.myRatingColour, 'fs-5') },
                 { data: 'averageCommunityRating', className: 'd-none d-md-table-cell text-center', render: (rating, type, person) => ratingBadge(rating, person.communityRatingColour, 'fs-5') },
-                { data: 'delta', className: 'd-none d-md-table-cell text-center text-nowrap', render: delta => delta == null ? '' : `${delta > 0 ? '+' : ''}${delta.toFixed(1)}` }
+                { data: 'delta', className: 'd-none d-md-table-cell text-center text-nowrap', render: formatDelta }
             ],
-            language: { emptyTable: 'No talent yet.', zeroRecords: 'No matching talent.', info: '_START_ to _END_ of _TOTAL_', infoEmpty: '0 to 0 of 0', infoFiltered: '(_MAX_)' },
-            layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' }
-        });
-        document.getElementById('talent-paging').append(document.querySelector('#talent_wrapper .dt-paging'));
-        // After each load, put the filters and sort in the address bar and count the active panel filters.
-        talent.on('draw', () => {
-            const query = new URLSearchParams(filterValues());
-            const order = talent.order();
-            if (JSON.stringify(order) !== JSON.stringify(defaultOrder)) {
-                query.set('sort', order[0][0]);
-                query.set('dir', order[0][1]);
-            }
-            history.replaceState(null, '', query.size > 0 ? `?${query}` : location.pathname);
-            filterCount.textContent = filterValues().filter(([key]) => key !== 'name').length || '';
-        });
-        // Show the filters on larger screens, or whenever some are already set.
-        if (window.matchMedia('(min-width: 768px)').matches || filterValues().some(([key]) => key !== 'name')) {
-            panel.classList.add('show');
-            document.getElementById('talent-filter-toggle').setAttribute('aria-expanded', 'true');
-        }
-        // Reload after typing pauses or a dropdown changes, so each keystroke doesn't hit the server.
-        let filterTimer;
-        const reload = () => {
-            clearTimeout(filterTimer);
-            talent.draw();
-        };
-        form.addEventListener('input', () => {
-            clearTimeout(filterTimer);
-            filterTimer = setTimeout(reload, 300);
-        });
-        form.addEventListener('submit', event => {
-            event.preventDefault();
-            reload();
-        });
-        document.getElementById('talent-filter-clear').addEventListener('click', () => {
-            panel.querySelectorAll('input, select').forEach(field => field.value = '');
-            reload();
-        });
-        window.addEventListener('pageshow', event => {
-            if (event.persisted) {
-                reload();
-            }
+            language: { emptyTable: 'No talent yet.', zeroRecords: 'No matching talent.', info: '_START_ to _END_ of _TOTAL_', infoEmpty: '0 to 0 of 0', infoFiltered: '(_MAX_)' }
         });
     </script>
 }
