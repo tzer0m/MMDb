@@ -6,10 +6,10 @@ namespace MMDb.Helpers;
 public static class CommunityRatingCalculator
 {
     /// <summary>
-    /// Averages whichever of the TMDb, IMDb, Rotten Tomatoes and Metacritic ratings are available on a 10-point scale, returning null if there are none.
+    /// Averages whichever of the TMDb, IMDb, Rotten Tomatoes and Metacritic ratings are available on a 0 to 10 scale, returning null if there are none.
     /// </summary>
     /// <param name="tmdbRating">The TMDb rating, out of 10.</param>
-    /// <param name="imdbRating">The IMDb rating, out of 10.</param>
+    /// <param name="imdbRating">The IMDb rating, from 1 to 10.</param>
     /// <param name="rottenTomatoes">The Rotten Tomatoes score, as a percentage.</param>
     /// <param name="metacritic">The Metacritic score, out of 100.</param>
     public static double? Calculate(double? tmdbRating, double? imdbRating, int? rottenTomatoes, int? metacritic)
@@ -21,7 +21,7 @@ public static class CommunityRatingCalculator
         }
         if (imdbRating is double imdb)
         {
-            ratings.Add(imdb);
+            ratings.Add(RatingScale.FromOneToTen(imdb));
         }
         if (rottenTomatoes is int rottenTomatoesScore)
         {

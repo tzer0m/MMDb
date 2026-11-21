@@ -130,10 +130,10 @@ public class Film
     public double? CommunityRating => CommunityRatingCalculator.Calculate(TMDbRating, IMDbRating, RottenTomatoes, Metacritic);
 
     /// <summary>
-    /// My rating minus the community rating: positive if I rate it higher, negative if the community does.
+    /// My rating minus the community rating, with my 1 to 10 rating stretched onto the community's 0 to 10 scale: positive if I rate it higher, negative if the community does.
     /// </summary>
     [NotMapped]
-    public double? RatingDelta => CommunityRating is double communityRating ? Math.Round(Rating - communityRating, 1) : null;
+    public double? RatingDelta => CommunityRating is double communityRating ? Math.Round(RatingScale.FromOneToTen(Rating) - communityRating, 1) : null;
 
     /// <summary>
     /// The runtime formatted as hours and minutes.
