@@ -14,9 +14,4 @@ public class RankingOptions
     /// How close together, in points, the films either side must be for the score to settle.
     /// </summary>
     public double SettledRange { get; set; } = 3;
-
-    /// <summary>
-    /// How many answers make up one ranking session.
-    /// </summary>
-    public int SessionLength { get; set; } = 10;
 }

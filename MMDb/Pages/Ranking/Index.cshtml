@@ -17,21 +17,9 @@
     <div class="alert alert-secondary py-2">@message</div>
 }
 
-@if (Model.SessionDone)
+@if (Model.Question is RankingQuestion question && question.Opponent is Film opponent)
 {
-    <div class="text-center py-5">
-        <p class="fs-4 mb-1">Session done</p>
-        <p class="text-muted">@Model.Answered questions answered.</p>
-        <div class="d-flex justify-content-center gap-2">
-            <a asp-page="/Ranking/Index" class="btn btn-secondary btn-lg">Keep Going</a>
-            <a asp-page="/Index" class="btn btn-outline-secondary btn-lg">Finish</a>
-        </div>
-    </div>
-}
-else if (Model.Question is RankingQuestion question && question.Opponent is Film opponent)
-{
-    <div class="d-flex justify-content-between text-muted small mb-2">
-        <span>Question @(Model.Answered + 1) of @Model.SessionLength</span>
+    <div class="d-flex justify-content-end text-muted small mb-2">
         <span>
             @if (question.IsAnchor)
             {
@@ -40,24 +28,22 @@ else if (Model.Question is RankingQuestion question && question.Opponent is Film
             Originally rated @question.Film.Rating &middot; @question.Comparisons of @question.ComparisonsNeeded answers
         </span>
     </div>
-    <div class="row g-3 text-center mb-3">
-        @{ await FilmCard(question.Film); }
-        @{ await FilmCard(opponent); }
-    </div>
-    <p class="fs-5 text-center mb-3">Is <strong>@question.Film.Title</strong> better or worse than <strong>@opponent.Title</strong>?</p>
-    <form method="post" asp-page-handler="Answer" asp-route-n="@Model.Answered">
+    <p class="fs-5 text-center mb-3">Which is better?</p>
+    <form method="post" asp-page-handler="Answer" id="rank-answer">
         <input type="hidden" name="filmId" value="@question.Film.FilmId" />
         <input type="hidden" name="otherFilmId" value="@opponent.FilmId" />
-        <div class="d-flex gap-2 mb-2">
-            <button type="submit" name="result" value="Better" class="btn btn-success btn-lg flex-fill py-3">Better</button>
-            <button type="submit" name="result" value="Similar" class="btn btn-secondary btn-lg flex-fill py-3">Similar</button>
-            <button type="submit" name="result" value="Worse" class="btn btn-danger btn-lg flex-fill py-3">Worse</button>
+        <div class="row g-3 text-center mb-3">
+            @{ await FilmChoice(question.Film, "Better", "rank-left", "\u2190"); }
+            @{ await FilmChoice(opponent, "Worse", "rank-right", "\u2192"); }
         </div>
-        <button type="submit" name="result" value="Skipped" class="btn btn-outline-secondary w-100">Don't Remember @opponent.Title</button>
+        <div class="d-flex gap-2">
+            <button type="submit" id="rank-similar" name="result" value="Similar" class="btn btn-secondary btn-lg flex-fill py-3">About the Same <span class="small opacity-75">&darr;</span></button>
+        </div>
+        <button type="submit" id="rank-skip" name="result" value="Skipped" class="btn btn-outline-secondary w-100 mt-2">Don't Remember @opponent.Title <span class="small opacity-75">&uarr;</span></button>
     </form>
     <div class="d-flex gap-2 mt-3">
-        <form method="post" asp-page-handler="Undo" asp-route-n="@Model.Answered" class="flex-fill">
-            <button type="submit" class="btn btn-outline-secondary w-100">Undo</button>
+        <form method="post" asp-page-handler="Undo" class="flex-fill">
+            <button type="submit" id="rank-undo" class="btn btn-outline-secondary w-100">Undo <span class="small opacity-75">Backspace</span></button>
         </form>
         <a asp-page="/Films/Details" asp-route-id="@question.Film.FilmId" class="btn btn-outline-secondary flex-fill">Finish Later</a>
     </div>
@@ -78,24 +64,45 @@ else if (Model.Settled == Model.Total)
 else
 {
     <div class="text-center py-5">
-        <a asp-page="/Ranking/Index" asp-route-n="@Model.Answered" class="btn btn-secondary btn-lg">Next Film</a>
+        <a asp-page="/Ranking/Index" class="btn btn-secondary btn-lg">Next Film</a>
     </div>
 }
 
 @{
-    async Task FilmCard(Film film)
+    async Task FilmChoice(Film film, string result, string id, string key)
     {
         <div class="col-6">
-            <div class="mx-auto" style="max-width: 220px">
-                <div class="ratio rounded overflow-hidden bg-body-secondary mb-2" style="--bs-aspect-ratio: 150%">
-                    @if (await Posters.UrlAsync(film.TMDbId, film.IMDbId, film.PosterPath, 342) is string posterUrl)
-                    {
-                        <img src="@posterUrl" alt="@film.Title poster" class="object-fit-cover" />
-                    }
-                </div>
-                <div class="fw-semibold">@film.Title</div>
-                <div class="text-muted small">@film.Year</div>
-            </div>
+            <button type="submit" id="@id" name="result" value="@result" class="btn btn-outline-secondary w-100 h-100 p-2 p-md-3" title="@film.Title is better (@key)">
+                <span class="d-block mx-auto" style="max-width: 220px">
+                    <span class="d-block ratio rounded overflow-hidden bg-body-secondary mb-2" style="--bs-aspect-ratio: 150%">
+                        @if (await Posters.UrlAsync(film.TMDbId, film.IMDbId, film.PosterPath, 342) is string posterUrl)
+                        {
+                            <img src="@posterUrl" alt="@film.Title poster" class="object-fit-cover" />
+                        }
+                    </span>
+                    <span class="d-block fw-semibold text-body">@film.Title</span>
+                    <span class="d-block text-muted small">@film.Year <span class="opacity-75">@key</span></span>
+                </span>
+            </button>
         </div>
     }
+}
+
+@section Scripts {
+    <script>
+        // Arrow keys answer: left or right picks that film, down is about the same, up is don't remember, and backspace undoes.
+        const keyButtons = { ArrowLeft: 'rank-left', ArrowRight: 'rank-right', ArrowDown: 'rank-similar', ArrowUp: 'rank-skip', Backspace: 'rank-undo' };
+        let answered = false;
+        document.addEventListener('keydown', event => {
+            const button = document.getElementById(keyButtons[event.key]);
+            if (!button || answered || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.target.closest('input, textarea, select')) {
+                return;
+            }
+            event.preventDefault();
+            answered = true;
+            button.click();
+        });
+        // Allow answering again if the browser brings the page back from its cache.
+        window.addEventListener('pageshow', () => answered = false);
+    </script>
 }
