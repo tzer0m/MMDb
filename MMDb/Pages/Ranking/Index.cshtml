@@ -83,9 +83,26 @@ else
                     <span class="d-block fw-semibold text-body">@film.Title</span>
                     <span class="d-block text-muted small">@film.Year <span class="opacity-75">@key</span></span>
                 </span>
+                @if (!string.IsNullOrWhiteSpace(film.Overview))
+                {
+                    <span class="d-block text-muted small text-start mt-2 rank-synopsis">@film.Overview</span>
+                }
             </button>
         </div>
     }
+}
+
+@section Styles {
+    <style>
+        /* Keep long synopses to a few lines so both films stay the same height. */
+        .rank-synopsis {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 5;
+            line-clamp: 5;
+            overflow: hidden;
+        }
+    </style>
 }
 
 @section Scripts {
