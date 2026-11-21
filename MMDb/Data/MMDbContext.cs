@@ -73,6 +73,7 @@ public class MMDbContext(DbContextOptions<MMDbContext> options) : DbContext(opti
         modelBuilder.Entity<LibraryFilm>().Property(x => x.Director).HasMaxLength(200);
         modelBuilder.Entity<FilmScore>().HasKey(x => x.FilmId);
         modelBuilder.Entity<FilmScore>().HasOne(x => x.Film).WithOne(x => x.FilmScore).HasForeignKey<FilmScore>(x => x.FilmId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<FilmScore>().HasOne(x => x.LinkedToFilm).WithMany().HasForeignKey(x => x.LinkedToFilmId).OnDelete(DeleteBehavior.SetNull);
         modelBuilder.Entity<FilmScore>().ToTable(x => x.HasCheckConstraint("CK_FilmScores_Score", "\"Score\" > 0 AND \"Score\" <= 100"));
         modelBuilder.Entity<FilmComparison>().HasOne(x => x.Film).WithMany().HasForeignKey(x => x.FilmId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<FilmComparison>().HasOne(x => x.OtherFilm).WithMany().HasForeignKey(x => x.OtherFilmId).OnDelete(DeleteBehavior.Cascade);

@@ -15,7 +15,7 @@ namespace MMDb.Pages.Ranking;
 public class AnchorsModel(MMDbContext db, RankingService ranking) : PageModel
 {
     /// <summary>
-    /// Every film's score grouped by its original rating, highest first, with films in title order.
+    /// Every film's score grouped by its original rating, highest first, with films in title order; linked films are left out.
     /// </summary>
     public List<IGrouping<int, FilmScore>> Bands { get; set; } = [];
 
@@ -26,7 +26,7 @@ public class AnchorsModel(MMDbContext db, RankingService ranking) : PageModel
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         await ranking.EnsureScoresAsync(cancellationToken);
-        List<FilmScore> scores = await db.FilmScores.AsNoTracking().Include(x => x.Film).ToListAsync(cancellationToken);
+        List<FilmScore> scores = await db.FilmScores.AsNoTracking().Include(x => x.Film).Where(x => x.LinkedToFilmId == null).ToListAsync(cancellationToken);
         Bands = [.. scores.OrderBy(x => x.Film.Title).GroupBy(x => x.Film.Rating).OrderByDescending(x => x.Key)];
     }
 

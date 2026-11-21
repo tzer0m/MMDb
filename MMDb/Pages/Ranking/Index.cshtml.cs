@@ -30,12 +30,12 @@ public class IndexModel(MMDbContext db, RankingService ranking) : PageModel
     public List<string> Messages { get; set; } = [];
 
     /// <summary>
-    /// How many films have a settled score.
+    /// How many films have a settled score, not counting linked films.
     /// </summary>
     public int Settled { get; set; }
 
     /// <summary>
-    /// How many films have a score, settled or not.
+    /// How many films have a score, settled or not, not counting linked films.
     /// </summary>
     public int Total { get; set; }
 
@@ -71,8 +71,8 @@ public class IndexModel(MMDbContext db, RankingService ranking) : PageModel
             }
             nextId = null;
         }
-        Total = await db.FilmScores.CountAsync(cancellationToken);
-        Settled = await db.FilmScores.CountAsync(x => x.IsSettled, cancellationToken);
+        Total = await db.FilmScores.CountAsync(x => x.LinkedToFilmId == null, cancellationToken);
+        Settled = await db.FilmScores.CountAsync(x => x.IsSettled && x.LinkedToFilmId == null, cancellationToken);
     }
 
     /// <summary>

@@ -1,5 +1,7 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using MMDb.Data;
 using MMDb.Models;
@@ -8,13 +10,14 @@ using MMDb.Services;
 namespace MMDb.Pages.Films;
 
 /// <summary>
-/// Edits a film's rating and watched date, refreshes its data, or deletes it.
+/// Edits a film's rating, watched date and linked film, refreshes its data, or deletes it.
 /// </summary>
 /// <param name="db">The database context.</param>
 /// <param name="filmData">The film data service.</param>
 /// <param name="jellyfin">The Jellyfin client.</param>
+/// <param name="ranking">The ranking service.</param>
 /// <param name="logger">The logger.</param>
-public partial class EditModel(MMDbContext db, FilmDataService filmData, JellyfinClient jellyfin, ILogger<EditModel> logger) : PageModel
+public partial class EditModel(MMDbContext db, FilmDataService filmData, JellyfinClient jellyfin, RankingService ranking, ILogger<EditModel> logger) : PageModel
 {
     /// <summary>
     /// The ID of the film being edited.
@@ -34,6 +37,18 @@ public partial class EditModel(MMDbContext db, FilmDataService filmData, Jellyfi
     public FilmInput Input { get; set; } = new();
 
     /// <summary>
+    /// The film this one shares its score with, or null if it is ranked on its own.
+    /// </summary>
+    [BindProperty]
+    [Display(Name = "Same Rating As")]
+    public int? LinkedToFilmId { get; set; }
+
+    /// <summary>
+    /// Every other film, for choosing one to share a score with.
+    /// </summary>
+    public List<SelectListItem> LinkOptions { get; set; } = [];
+
+    /// <summary>
     /// Loads the film into the form.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -46,11 +61,13 @@ public partial class EditModel(MMDbContext db, FilmDataService filmData, Jellyfi
         }
         Film = film;
         Input = FilmInput.FromFilm(film);
+        LinkedToFilmId = await db.FilmScores.Where(x => x.FilmId == Id).Select(x => x.LinkedToFilmId).FirstOrDefaultAsync(cancellationToken);
+        await LoadLinkOptionsAsync(cancellationToken);
         return Page();
     }
 
     /// <summary>
-    /// Saves the rating and watched date, pushes the rating to Jellyfin, then redirects to the film's page.
+    /// Saves the rating, watched date and linked film, pushes the rating to Jellyfin, then redirects to the film's page.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
@@ -63,10 +80,12 @@ public partial class EditModel(MMDbContext db, FilmDataService filmData, Jellyfi
         if (!ModelState.IsValid)
         {
             Film = film;
+            await LoadLinkOptionsAsync(cancellationToken);
             return Page();
         }
         Input.ApplyTo(film);
         await db.SaveChangesAsync(cancellationToken);
+        await ranking.LinkAsync(film.FilmId, LinkedToFilmId, cancellationToken);
         TempData["Message"] = await PushToJellyfinAsync(film, cancellationToken);
         return RedirectToPage("/Films/Details", new { id = film.FilmId });
     }
@@ -108,6 +127,16 @@ public partial class EditModel(MMDbContext db, FilmDataService filmData, Jellyfi
     {
         await db.Films.Where(x => x.FilmId == Id).ExecuteDeleteAsync(cancellationToken);
         return RedirectToPage("/Index");
+    }
+
+    /// <summary>
+    /// Loads every other film, in title order, for the linked film dropdown.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task LoadLinkOptionsAsync(CancellationToken cancellationToken)
+    {
+        List<Film> films = await db.Films.AsNoTracking().Where(x => x.FilmId != Id).OrderBy(x => x.Title).ThenBy(x => x.Year).Select(x => new Film { FilmId = x.FilmId, Title = x.Title, Year = x.Year }).ToListAsync(cancellationToken);
+        LinkOptions = [.. films.Select(x => new SelectListItem(x.Year is int year ? $"{x.Title} ({year})" : x.Title, x.FilmId.ToString()))];
     }
 
     /// <summary>

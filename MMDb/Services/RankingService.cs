@@ -47,7 +47,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<int?> PickNextFilmAsync(CancellationToken cancellationToken = default)
     {
-        List<FilmScore> unsettled = await db.FilmScores.AsNoTracking().Where(x => !x.IsSettled).ToListAsync(cancellationToken);
+        List<FilmScore> unsettled = await db.FilmScores.AsNoTracking().Where(x => !x.IsSettled && x.LinkedToFilmId == null).ToListAsync(cancellationToken);
         if (unsettled.Count == 0)
         {
             return null;
@@ -60,19 +60,19 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         {
             return null;
         }
-        int? inProgress = await db.FilmComparisons.Where(x => !x.Film.FilmScore!.IsSettled && x.CreatedAt >= x.Film.FilmScore!.ResetAt).GroupBy(x => x.FilmId).OrderByDescending(x => x.Count()).Select(x => (int?)x.Key).FirstOrDefaultAsync(cancellationToken);
+        int? inProgress = await db.FilmComparisons.Where(x => !x.Film.FilmScore!.IsSettled && x.Film.FilmScore!.LinkedToFilmId == null && x.CreatedAt >= x.Film.FilmScore!.ResetAt).GroupBy(x => x.FilmId).OrderByDescending(x => x.Count()).Select(x => (int?)x.Key).FirstOrDefaultAsync(cancellationToken);
         return inProgress ?? unsettled[Random.Shared.Next(unsettled.Count)].FilmId;
     }
 
     /// <summary>
-    /// Gets the next question for an unsettled film, settling it or restarting it first if its answers call for that; null if the film isn't waiting to be ranked, or isn't an anchor and nothing is settled to compare it with.
+    /// Gets the next question for an unsettled film, settling it or restarting it first if its answers call for that; null if the film isn't waiting to be ranked, is linked to another film, or isn't an anchor and nothing is settled to compare it with.
     /// </summary>
     /// <param name="filmId">The film being ranked.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<RankingQuestion?> GetQuestionAsync(int filmId, CancellationToken cancellationToken = default)
     {
         Dictionary<int, FilmScore> scores = await db.FilmScores.ToDictionaryAsync(x => x.FilmId, cancellationToken);
-        if (!scores.TryGetValue(filmId, out FilmScore? score) || score.IsSettled || !score.IsAnchor && !scores.Values.Any(x => x.IsSettled))
+        if (!scores.TryGetValue(filmId, out FilmScore? score) || score.IsSettled || score.LinkedToFilmId is not null || !score.IsAnchor && !scores.Values.Any(x => x.IsSettled))
         {
             return null;
         }
@@ -86,13 +86,13 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
             question.Message = await RestartAsync(score, state, scores, film, cancellationToken);
             return question;
         }
-        // Only settled films are compared against, so mistakes in unsettled ones don't spread.
-        List<FilmScore> candidates = [.. scores.Values.Where(x => x.IsSettled && x.FilmId != filmId && x.Score > state.Lower && x.Score < state.Upper && !state.Asked.Contains(x.FilmId)).OrderBy(x => x.Score)];
+        // Only settled films are compared against, so mistakes in unsettled ones don't spread; linked films would just repeat their main film.
+        List<FilmScore> candidates = [.. scores.Values.Where(x => x.IsSettled && x.LinkedToFilmId is null && x.FilmId != filmId && x.Score > state.Lower && x.Score < state.Upper && !state.Asked.Contains(x.FilmId)).OrderBy(x => x.Score)];
         bool enoughAnswers = state.Comparisons >= needed;
         if (candidates.Count == 0 || enoughAnswers && state.Upper - state.Lower <= options.Value.SettledRange)
         {
             // With too few answers and nothing left inside the range, check against the nearest films just outside it instead.
-            FilmScore? check = candidates.Count == 0 && !enoughAnswers ? scores.Values.Where(x => x.IsSettled && x.FilmId != filmId && !state.Asked.Contains(x.FilmId)).OrderBy(x => x.Score <= state.Lower ? state.Lower - x.Score : x.Score - state.Upper).FirstOrDefault() : null;
+            FilmScore? check = candidates.Count == 0 && !enoughAnswers ? scores.Values.Where(x => x.IsSettled && x.LinkedToFilmId is null && x.FilmId != filmId && !state.Asked.Contains(x.FilmId)).OrderBy(x => x.Score <= state.Lower ? state.Lower - x.Score : x.Score - state.Upper).FirstOrDefault() : null;
             if (check is null)
             {
                 question.Message = await SettleAsync(score, state, film, cancellationToken);
@@ -115,7 +115,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<bool> AnswerAsync(int filmId, int otherFilmId, ComparisonResult result, CancellationToken cancellationToken = default)
     {
-        if (filmId == otherFilmId || !await db.FilmScores.AnyAsync(x => x.FilmId == filmId && !x.IsSettled, cancellationToken) || !await db.Films.AnyAsync(x => x.FilmId == otherFilmId, cancellationToken))
+        if (filmId == otherFilmId || !await db.FilmScores.AnyAsync(x => x.FilmId == filmId && !x.IsSettled && x.LinkedToFilmId == null, cancellationToken) || !await db.Films.AnyAsync(x => x.FilmId == otherFilmId, cancellationToken))
         {
             return false;
         }
@@ -139,12 +139,13 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         db.FilmComparisons.Remove(last);
         score.IsSettled = false;
         score.UpdatedAt = DateTime.UtcNow;
+        await SyncLinkedAsync([score], cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         return last.FilmId;
     }
 
     /// <summary>
-    /// Makes exactly the given films anchors; anchors that are already settled stay settled.
+    /// Makes exactly the given films anchors, leaving out linked films; anchors that are already settled stay settled.
     /// </summary>
     /// <param name="filmIds">The films to make anchors.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
@@ -154,7 +155,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         DateTime now = DateTime.UtcNow;
         foreach (FilmScore score in await db.FilmScores.ToListAsync(cancellationToken))
         {
-            bool isAnchor = anchors.Contains(score.FilmId);
+            bool isAnchor = anchors.Contains(score.FilmId) && score.LinkedToFilmId is null;
             if (score.IsAnchor != isAnchor)
             {
                 score.IsAnchor = isAnchor;
@@ -163,6 +164,82 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
             }
         }
         await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Links a film to another so they share one score, or unlinks it if no film is given; a link to a linked film goes to its main film instead, and films linked to this one move with it.
+    /// </summary>
+    /// <param name="filmId">The film to link.</param>
+    /// <param name="linkedToFilmId">The film to share a score with, or null to unlink.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task LinkAsync(int filmId, int? linkedToFilmId, CancellationToken cancellationToken = default)
+    {
+        await EnsureScoresAsync(cancellationToken);
+        Dictionary<int, FilmScore> scores = await db.FilmScores.ToDictionaryAsync(x => x.FilmId, cancellationToken);
+        if (!scores.TryGetValue(filmId, out FilmScore? score))
+        {
+            return;
+        }
+        int? mainId = linkedToFilmId is int targetId && scores.TryGetValue(targetId, out FilmScore? target) ? target.LinkedToFilmId ?? target.FilmId : null;
+        if (mainId == filmId)
+        {
+            mainId = null;
+        }
+        if (score.LinkedToFilmId == mainId)
+        {
+            return;
+        }
+        DateTime now = DateTime.UtcNow;
+        if (mainId is int main)
+        {
+            foreach (FilmScore follower in scores.Values.Where(x => x.LinkedToFilmId == filmId))
+            {
+                follower.LinkedToFilmId = main;
+                CopyScore(scores[main], follower, now);
+            }
+            score.LinkedToFilmId = main;
+            score.IsAnchor = false;
+            CopyScore(scores[main], score, now);
+        }
+        else
+        {
+            // Unlinked, it starts from the shared score but has to be ranked on its own.
+            score.LinkedToFilmId = null;
+            score.IsSettled = false;
+            score.ResetAt = now;
+            score.UpdatedAt = now;
+        }
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Copies each main film's score and whether it is settled onto the films linked to it.
+    /// </summary>
+    /// <param name="mains">The main films whose scores changed, tracked.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task SyncLinkedAsync(List<FilmScore> mains, CancellationToken cancellationToken)
+    {
+        Dictionary<int, FilmScore> byId = mains.DistinctBy(x => x.FilmId).ToDictionary(x => x.FilmId);
+        List<int> mainIds = [.. byId.Keys];
+        DateTime now = DateTime.UtcNow;
+        foreach (FilmScore follower in await db.FilmScores.Where(x => x.LinkedToFilmId != null && mainIds.Contains(x.LinkedToFilmId.Value)).ToListAsync(cancellationToken))
+        {
+            CopyScore(byId[follower.LinkedToFilmId!.Value], follower, now);
+        }
+    }
+
+    /// <summary>
+    /// Copies a main film's score and whether it is settled onto a linked film.
+    /// </summary>
+    /// <param name="main">The main film's score.</param>
+    /// <param name="linked">The linked film's score.</param>
+    /// <param name="now">The current time (UTC).</param>
+    private static void CopyScore(FilmScore main, FilmScore linked, DateTime now)
+    {
+        linked.Score = main.Score;
+        linked.IsSettled = main.IsSettled;
+        linked.SettledAt = main.SettledAt;
+        linked.UpdatedAt = now;
     }
 
     /// <summary>
@@ -198,6 +275,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         score.IsSettled = true;
         score.SettledAt = now;
         score.UpdatedAt = now;
+        await SyncLinkedAsync([score], cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         LogSettled(logger, film.Title, score.Score);
         return $"{film.Title} settled at {score.DisplayScore}.";
@@ -231,6 +309,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         }
         score.ResetAt = now;
         score.UpdatedAt = now;
+        await SyncLinkedAsync([score, .. clashing.Select(x => scores[x])], cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
         List<string> titles = await db.Films.Where(x => clashing.Contains(x.FilmId)).Select(x => x.Title).ToListAsync(cancellationToken);
         LogRestarted(logger, film.Title, string.Join(", ", titles));

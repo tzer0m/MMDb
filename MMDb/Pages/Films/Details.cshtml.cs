@@ -33,7 +33,7 @@ public class DetailsModel(MMDbContext db, FilmPeopleService filmPeople, Jellyfin
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<IActionResult> OnGetAsync(int id, CancellationToken cancellationToken)
     {
-        Film? film = await db.Films.AsNoTracking().Include(x => x.Credits).ThenInclude(x => x.Person).FirstOrDefaultAsync(x => x.FilmId == id, cancellationToken);
+        Film? film = await db.Films.AsNoTracking().Include(x => x.Credits).ThenInclude(x => x.Person).Include(x => x.FilmScore).ThenInclude(x => x!.LinkedToFilm).FirstOrDefaultAsync(x => x.FilmId == id, cancellationToken);
         if (film is null)
         {
             return NotFound();

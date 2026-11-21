@@ -39,6 +39,10 @@
                 }
                 @Model.WatchedOn?.ToString("d MMMM yyyy")
             </p>
+            @if (Model.FilmScore?.LinkedToFilm is Film linkedTo)
+            {
+                <p class="text-muted small mb-0">Shares its rating with <a asp-page="/Films/Details" asp-route-id="@linkedTo.FilmId">@linkedTo.Title</a></p>
+            }
             @if (ViewData["Collections"] is List<JellyfinCollection> collections && collections.Count > 0)
             {
                 <div class="d-flex flex-wrap gap-2 mt-2">

@@ -33,6 +33,16 @@ public class FilmScore
     public bool IsAnchor { get; set; }
 
     /// <summary>
+    /// The film this one shares its score with, e.g. another cut of the same film; linked films are never ranked themselves.
+    /// </summary>
+    public int? LinkedToFilmId { get; set; }
+
+    /// <summary>
+    /// The film this one shares its score with.
+    /// </summary>
+    public Film? LinkedToFilm { get; set; }
+
+    /// <summary>
     /// When the current placement started (UTC); only comparisons after this count towards it.
     /// </summary>
     public DateTime ResetAt { get; set; }

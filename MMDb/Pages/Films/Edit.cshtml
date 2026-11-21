@@ -30,6 +30,13 @@
         <input asp-for="Input.WatchedOn" class="form-control" />
         <span asp-validation-for="Input.WatchedOn" class="text-danger small"></span>
     </div>
+    <div class="col-12">
+        <label asp-for="LinkedToFilmId" class="form-label"></label>
+        <select asp-for="LinkedToFilmId" asp-items="Model.LinkOptions" class="form-select">
+            <option value="">None, ranked on its own</option>
+        </select>
+        <div class="form-text">For another version of the same film, e.g. a director's cut. It shares that film's score and isn't ranked itself.</div>
+    </div>
     <div class="col-12 d-flex flex-wrap gap-2">
         <button type="submit" class="btn btn-secondary">Save</button>
         <button type="submit" asp-page-handler="Refresh" formnovalidate class="btn btn-outline-secondary">Refresh Data</button>

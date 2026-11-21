@@ -173,6 +173,9 @@ namespace MMDb.Migrations
                     b.Property<bool>("IsSettled")
                         .HasColumnType("boolean");
 
+                    b.Property<int?>("LinkedToFilmId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("ResetAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -186,6 +189,8 @@ namespace MMDb.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("FilmId");
+
+                    b.HasIndex("LinkedToFilmId");
 
                     b.ToTable("FilmScores", t =>
                         {
@@ -340,7 +345,14 @@ namespace MMDb.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("MMDb.Models.Film", "LinkedToFilm")
+                        .WithMany()
+                        .HasForeignKey("LinkedToFilmId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Film");
+
+                    b.Navigation("LinkedToFilm");
                 });
 
             modelBuilder.Entity("MMDb.Models.Film", b =>
