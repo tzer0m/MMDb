@@ -1,0 +1,101 @@
+﻿@page "/rank/{filmId:int?}"
+@model MMDb.Pages.Ranking.IndexModel
+@{
+    ViewData["Title"] = "Ranking";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h4 mb-0">Ranking</h1>
+    <div class="d-flex align-items-center gap-3">
+        <span class="text-muted small">@Model.Settled of @Model.Total settled</span>
+        <a asp-page="/Ranking/Anchors" class="btn btn-sm btn-outline-secondary">Anchors</a>
+    </div>
+</div>
+
+@foreach (string message in Model.Messages)
+{
+    <div class="alert alert-secondary py-2">@message</div>
+}
+
+@if (Model.SessionDone)
+{
+    <div class="text-center py-5">
+        <p class="fs-4 mb-1">Session done</p>
+        <p class="text-muted">@Model.Answered questions answered.</p>
+        <div class="d-flex justify-content-center gap-2">
+            <a asp-page="/Ranking/Index" class="btn btn-secondary btn-lg">Keep Going</a>
+            <a asp-page="/Index" class="btn btn-outline-secondary btn-lg">Finish</a>
+        </div>
+    </div>
+}
+else if (Model.Question is RankingQuestion question && question.Opponent is Film opponent)
+{
+    <div class="d-flex justify-content-between text-muted small mb-2">
+        <span>Question @(Model.Answered + 1) of @Model.SessionLength</span>
+        <span>
+            @if (question.IsAnchor)
+            {
+                <text>Anchor &middot; </text>
+            }
+            Originally rated @question.Film.Rating &middot; @question.Comparisons of @question.ComparisonsNeeded answers
+        </span>
+    </div>
+    <div class="row g-3 text-center mb-3">
+        @{ await FilmCard(question.Film); }
+        @{ await FilmCard(opponent); }
+    </div>
+    <p class="fs-5 text-center mb-3">Is <strong>@question.Film.Title</strong> better or worse than <strong>@opponent.Title</strong>?</p>
+    <form method="post" asp-page-handler="Answer" asp-route-n="@Model.Answered">
+        <input type="hidden" name="filmId" value="@question.Film.FilmId" />
+        <input type="hidden" name="otherFilmId" value="@opponent.FilmId" />
+        <div class="d-flex gap-2 mb-2">
+            <button type="submit" name="result" value="Better" class="btn btn-success btn-lg flex-fill py-3">Better</button>
+            <button type="submit" name="result" value="Similar" class="btn btn-secondary btn-lg flex-fill py-3">Similar</button>
+            <button type="submit" name="result" value="Worse" class="btn btn-danger btn-lg flex-fill py-3">Worse</button>
+        </div>
+        <button type="submit" name="result" value="Skipped" class="btn btn-outline-secondary w-100">Don't Remember @opponent.Title</button>
+    </form>
+    <div class="d-flex gap-2 mt-3">
+        <form method="post" asp-page-handler="Undo" asp-route-n="@Model.Answered" class="flex-fill">
+            <button type="submit" class="btn btn-outline-secondary w-100">Undo</button>
+        </form>
+        <a asp-page="/Films/Details" asp-route-id="@question.Film.FilmId" class="btn btn-outline-secondary flex-fill">Finish Later</a>
+    </div>
+}
+else if (Model.Settled == 0)
+{
+    <div class="text-center py-5">
+        <p class="fs-5">Nothing is settled yet, so there's nothing to compare films with.</p>
+        <a asp-page="/Ranking/Anchors" class="btn btn-secondary btn-lg">Pick Anchors</a>
+    </div>
+}
+else if (Model.Settled == Model.Total)
+{
+    <div class="text-center py-5">
+        <p class="fs-5">Every film is settled.</p>
+    </div>
+}
+else
+{
+    <div class="text-center py-5">
+        <a asp-page="/Ranking/Index" asp-route-n="@Model.Answered" class="btn btn-secondary btn-lg">Next Film</a>
+    </div>
+}
+
+@{
+    async Task FilmCard(Film film)
+    {
+        <div class="col-6">
+            <div class="mx-auto" style="max-width: 220px">
+                <div class="ratio rounded overflow-hidden bg-body-secondary mb-2" style="--bs-aspect-ratio: 150%">
+                    @if (await Posters.UrlAsync(film.TMDbId, film.IMDbId, film.PosterPath, 342) is string posterUrl)
+                    {
+                        <img src="@posterUrl" alt="@film.Title poster" class="object-fit-cover" />
+                    }
+                </div>
+                <div class="fw-semibold">@film.Title</div>
+                <div class="text-muted small">@film.Year</div>
+            </div>
+        </div>
+    }
+}

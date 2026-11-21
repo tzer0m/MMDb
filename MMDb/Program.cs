@@ -19,6 +19,7 @@ builder.Services.Configure<RatingsRefreshOptions>(builder.Configuration.GetSecti
 builder.Services.Configure<PeopleOptions>(builder.Configuration.GetSection("People"));
 builder.Services.Configure<SearchOptions>(builder.Configuration.GetSection("Search"));
 builder.Services.Configure<ChartOptions>(builder.Configuration.GetSection("Charts"));
+builder.Services.Configure<RankingOptions>(builder.Configuration.GetSection("Ranking"));
 builder.Services.AddHttpClient<TMDbClient>();
 builder.Services.AddHttpClient<OMDbClient>();
 builder.Services.AddHttpClient<JellyfinClient>();
@@ -69,11 +70,12 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-// Everything is public except editing films and searching TMDb; previews and unrated people 404 when signed out, and adding checks sign-in when the form is posted.
+// Everything is public except editing films, searching TMDb and ranking; previews and unrated people 404 when signed out, and adding checks sign-in when the form is posted.
 builder.Services.AddRazorPages(options =>
 {
     options.Conventions.AuthorizePage("/Films/Edit");
     options.Conventions.AuthorizePage("/Films/Search");
+    options.Conventions.AuthorizeFolder("/Ranking");
 });
 
 // Build the app, apply any pending migrations and give any new films a provisional score.
