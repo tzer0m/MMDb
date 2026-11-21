@@ -68,26 +68,6 @@ public class FilmFilter
     public double? MaxDelta { get; set; }
 
     /// <summary>
-    /// The shortest runtime in minutes.
-    /// </summary>
-    public int? MinRuntime { get; set; }
-
-    /// <summary>
-    /// The longest runtime in minutes.
-    /// </summary>
-    public int? MaxRuntime { get; set; }
-
-    /// <summary>
-    /// The earliest watched date.
-    /// </summary>
-    public DateOnly? WatchedFrom { get; set; }
-
-    /// <summary>
-    /// The latest watched date.
-    /// </summary>
-    public DateOnly? WatchedTo { get; set; }
-
-    /// <summary>
     /// Returns whether a film passes every filter that has a value.
     /// </summary>
     /// <param name="film">The film to check; unrated library films have a film ID of 0.</param>
@@ -95,6 +75,6 @@ public class FilmFilter
     public bool Matches(Film film, HashSet<int>? castFilmIds)
     {
         bool rated = film.FilmId != 0;
-        return FilterMatch.Contains(film.Title, Title) && FilterMatch.Contains(film.Director, Director) && (castFilmIds is null || castFilmIds.Contains(film.FilmId)) && (Status != "watched" || rated) && (Status != "unwatched" || !rated) && FilterMatch.InRange(film.Year, MinYear, MaxYear) && FilterMatch.InRange(rated ? film.Rating : (int?)null, MinMr, MaxMr) && FilterMatch.InRange(film.CommunityRating, MinCr, MaxCr) && FilterMatch.InRange(rated ? film.RatingDelta : null, MinDelta, MaxDelta) && FilterMatch.InRange(film.RuntimeMinutes, MinRuntime, MaxRuntime) && FilterMatch.InRange(film.WatchedOn, WatchedFrom, WatchedTo);
+        return FilterMatch.Contains(film.Title, Title) && FilterMatch.Contains(film.Director, Director) && (castFilmIds is null || castFilmIds.Contains(film.FilmId)) && (Status != "watched" || rated) && (Status != "unwatched" || !rated) && FilterMatch.InRange(film.Year, MinYear, MaxYear) && FilterMatch.InRange(rated ? film.Rating : (int?)null, MinMr, MaxMr) && FilterMatch.InRange(film.CommunityRating, MinCr, MaxCr) && FilterMatch.InRange(rated ? film.RatingDelta : null, MinDelta, MaxDelta);
     }
 }

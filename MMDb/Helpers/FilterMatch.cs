@@ -25,15 +25,4 @@ public static class FilterMatch
     {
         return min is null && max is null || value is double number && (min is null || number >= min) && (max is null || number <= max);
     }
-
-    /// <summary>
-    /// Returns whether a date is within a range, or true if the range has no bounds; a missing date fails any bound.
-    /// </summary>
-    /// <param name="value">The date to check.</param>
-    /// <param name="from">The earliest allowed date.</param>
-    /// <param name="to">The latest allowed date.</param>
-    public static bool InRange(DateOnly? value, DateOnly? from, DateOnly? to)
-    {
-        return from is null && to is null || value is DateOnly date && (from is null || date >= from) && (to is null || date <= to);
-    }
 }

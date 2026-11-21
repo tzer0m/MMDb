@@ -41,15 +41,6 @@
             @{ RangeFilter("My Rating", "Mr", Model.Filter.MinMr, Model.Filter.MaxMr, "1", "1", "10"); }
             @{ RangeFilter("Community Rating", "Cr", Model.Filter.MinCr, Model.Filter.MaxCr, "0.1", "0", "10"); }
             @{ RangeFilter("Delta", "Delta", Model.Filter.MinDelta, Model.Filter.MaxDelta, "0.1", null, null); }
-            @{ RangeFilter("Runtime (Minutes)", "Runtime", Model.Filter.MinRuntime, Model.Filter.MaxRuntime, "1", "0", null); }
-            <div class="col-12 col-md-6 col-xl-4">
-                <label for="filter-watched-from" class="form-label small mb-1">Watched</label>
-                <div class="input-group input-group-sm">
-                    <input type="date" id="filter-watched-from" name="watchedFrom" value="@Model.Filter.WatchedFrom?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" class="form-control form-control-sm" aria-label="Watched From" />
-                    <span class="input-group-text">to</span>
-                    <input type="date" name="watchedTo" value="@Model.Filter.WatchedTo?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" class="form-control form-control-sm" aria-label="Watched To" />
-                </div>
-            </div>
             <div class="col-12 d-flex justify-content-end">
                 <button type="button" id="films-filter-clear" class="btn btn-sm btn-outline-secondary">Clear Filters</button>
             </div>

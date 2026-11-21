@@ -37,7 +37,7 @@ public class IndexModel(MMDbContext db, PosterService posters) : PageModel
     public async Task<JsonResult> OnGetDataAsync([FromQuery] FilmFilter filter, CancellationToken cancellationToken)
     {
         DataTablesRequest request = DataTablesRequest.FromQuery(Request.Query);
-        List<Film> films = await db.Films.AsNoTracking().Select(x => new Film { FilmId = x.FilmId, TMDbId = x.TMDbId, IMDbId = x.IMDbId, Title = x.Title, Year = x.Year, Director = x.Director, RuntimeMinutes = x.RuntimeMinutes, PosterPath = x.PosterPath, TMDbRating = x.TMDbRating, IMDbRating = x.IMDbRating, RottenTomatoes = x.RottenTomatoes, Metacritic = x.Metacritic, Rating = x.Rating, WatchedOn = x.WatchedOn }).ToListAsync(cancellationToken);
+        List<Film> films = await db.Films.AsNoTracking().Select(x => new Film { FilmId = x.FilmId, TMDbId = x.TMDbId, IMDbId = x.IMDbId, Title = x.Title, Year = x.Year, Director = x.Director, PosterPath = x.PosterPath, TMDbRating = x.TMDbRating, IMDbRating = x.IMDbRating, RottenTomatoes = x.RottenTomatoes, Metacritic = x.Metacritic, Rating = x.Rating, WatchedOn = x.WatchedOn }).ToListAsync(cancellationToken);
         if (User.Identity?.IsAuthenticated == true && filter.Status != "watched")
         {
             films.AddRange(await LoadUnratedAsync(films, cancellationToken));
