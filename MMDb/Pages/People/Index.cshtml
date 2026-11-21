@@ -41,39 +41,7 @@
             <th class="d-none d-md-table-cell text-center" title="Average Community Rating">CR</th>
         </tr>
     </thead>
-    <tbody>
-        @foreach (TalentSummary person in Model.Talent)
-        {
-            <tr class="position-relative">
-                <td class="p-1">
-                    @if (person.ProfilePath is not null)
-                    {
-                        <img src="@(imageBaseUrl)w92@(person.ProfilePath)" alt="" class="rounded object-fit-cover" width="43" height="64" loading="lazy" />
-                    }
-                </td>
-                <td style="max-width: 0; width: 100%" data-order="@person.Name">
-                    <div class="text-truncate" title="@person.Name"><a asp-page="/People/Details" asp-route-id="@person.PersonId" class="stretched-link text-reset text-decoration-none">@person.Name</a></div>
-                    <div class="d-flex d-md-none align-items-center gap-2 mt-1">
-                        <span class="text-truncate text-muted small">@person.FilmCount @(person.FilmCount == 1 ? "film" : "films") &middot; @person.Roles</span>
-                        <span class="badge text-black ms-auto" style="@RatingColour.StyleForRating(person.AverageMyRating)" title="Average My Rating">@person.AverageMyRating.ToString("0.0")</span>
-                        @if (person.AverageCommunityRating is double mobileCommunityRating)
-                        {
-                            <span class="badge text-black" style="@RatingColour.StyleForRating(mobileCommunityRating)" title="Average Community Rating">@mobileCommunityRating.ToString("0.0")</span>
-                        }
-                    </div>
-                </td>
-                <td class="d-none d-md-table-cell text-center">@person.FilmCount</td>
-                <td class="d-none d-md-table-cell text-center text-nowrap">@person.Roles</td>
-                <td class="d-none d-md-table-cell text-center" data-order="@person.AverageMyRating"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(person.AverageMyRating)">@person.AverageMyRating.ToString("0.0")</span></td>
-                <td class="d-none d-md-table-cell text-center" data-order="@(person.AverageCommunityRating ?? -1)">
-                    @if (person.AverageCommunityRating is double communityRating)
-                    {
-                        <span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(communityRating)">@communityRating.ToString("0.0")</span>
-                    }
-                </td>
-            </tr>
-        }
-    </tbody>
+    <tbody></tbody>
 </table>
 
 @section Styles {
@@ -87,33 +55,52 @@
     <script src="~/lib/datatables.net/dataTables.min.js"></script>
     <script src="~/lib/datatables.net-bs5/dataTables.bootstrap5.min.js"></script>
     <script>
+        const imageBaseUrl = '@(imageBaseUrl)w92';
+        const personUrl = '@Url.Content("~/talent/")';
+        const searchInput = document.getElementById('talent-search-input');
+        const roleFilter = document.getElementById('talent-role');
         const minFilms = document.getElementById('talent-min-films');
+        const escapeHtml = text => String(text).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+        const ratingBadge = (rating, colour, classes, title) => rating == null ? '' : `<span class="badge ${classes} text-black" style="background-color: ${colour}"${title ? ` title="${title}"` : ''}>${rating.toFixed(1)}</span>`;
+        // The server searches, filters, sorts and pages, so only one page of rows is ever loaded.
         const talent = new DataTable('#talent', {
+            serverSide: true,
+            ajax: { url: '@Url.Page("/People/Index", "Data")', data: request => { request.role = roleFilter.value; request.minFilms = minFilms.value; } },
+            search: { search: searchInput.value },
             order: [[2, 'desc'], [1, 'asc']],
             autoWidth: false,
             pageLength: 100,
-            columnDefs: [{ targets: 0, orderable: false }],
+            createdRow: row => row.classList.add('position-relative'),
+            columns: [
+                { data: 'profilePath', orderable: false, createdCell: cell => cell.classList.add('p-1'), render: path => path ? `<img src="${imageBaseUrl}${escapeHtml(path)}" alt="" class="rounded object-fit-cover" width="43" height="64" loading="lazy" />` : '' },
+                { data: 'name', createdCell: cell => cell.style.cssText = 'max-width: 0; width: 100%', render: (name, type, person) => `<div class="text-truncate" title="${escapeHtml(name)}"><a href="${personUrl}${person.personId}" class="stretched-link text-reset text-decoration-none">${escapeHtml(name)}</a></div><div class="d-flex d-md-none align-items-center gap-2 mt-1"><span class="text-truncate text-muted small">${person.filmCount} ${person.filmCount === 1 ? 'film' : 'films'} &middot; ${person.roles}</span>${ratingBadge(person.averageMyRating, person.myRatingColour, 'ms-auto', 'Average My Rating')}${ratingBadge(person.averageCommunityRating, person.communityRatingColour, '', 'Average Community Rating')}</div>` },
+                { data: 'filmCount', className: 'd-none d-md-table-cell text-center' },
+                { data: 'roles', className: 'd-none d-md-table-cell text-center text-nowrap' },
+                { data: 'averageMyRating', className: 'd-none d-md-table-cell text-center', render: (rating, type, person) => ratingBadge(rating, person.myRatingColour, 'fs-5') },
+                { data: 'averageCommunityRating', className: 'd-none d-md-table-cell text-center', render: (rating, type, person) => ratingBadge(rating, person.communityRatingColour, 'fs-5') }
+            ],
             language: { emptyTable: 'No talent yet.', zeroRecords: 'No matching talent.', info: '_START_ to _END_ of _TOTAL_', infoEmpty: '0 to 0 of 0', infoFiltered: '(_MAX_)' },
             layout: { topStart: null, topEnd: null, bottomStart: 'info', bottomEnd: 'paging' }
         });
         document.getElementById('talent-paging').append(document.querySelector('#talent_wrapper .dt-paging'));
-        const roleFilter = document.getElementById('talent-role');
-        const searchInput = document.getElementById('talent-search-input');
-        // Apply every filter from the current control values, including ones the browser restores when navigating back.
-        const applyFilters = () => {
-            talent.search(searchInput.value);
-            talent.column(3).search(roleFilter.value);
-            talent.column(2).search(value => Number(value) >= Number(minFilms.value));
-            talent.draw();
-        };
+        // Re-query with the current control values; typing waits briefly so each keystroke doesn't hit the server.
+        const applyFilters = () => talent.search(searchInput.value).draw();
+        let searchTimer;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(applyFilters, 300);
+        });
         roleFilter.addEventListener('change', applyFilters);
         minFilms.addEventListener('change', applyFilters);
-        searchInput.addEventListener('input', applyFilters);
         document.getElementById('talent-search').addEventListener('submit', event => {
             event.preventDefault();
+            clearTimeout(searchTimer);
             applyFilters();
         });
-        window.addEventListener('pageshow', applyFilters);
-        applyFilters();
+        window.addEventListener('pageshow', event => {
+            if (event.persisted) {
+                applyFilters();
+            }
+        });
     </script>
 }

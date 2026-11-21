@@ -1,3 +1,5 @@
+using MMDb.Helpers;
+
 namespace MMDb.Models;
 
 /// <summary>
@@ -39,4 +41,14 @@ public class TalentSummary
     /// The average community rating across their films that have one.
     /// </summary>
     public double? AverageCommunityRating { get; set; }
+
+    /// <summary>
+    /// The background colour for my average rating.
+    /// </summary>
+    public string MyRatingColour => RatingColour.ForRating(AverageMyRating);
+
+    /// <summary>
+    /// The background colour for the average community rating, if there is one.
+    /// </summary>
+    public string? CommunityRatingColour => AverageCommunityRating is double rating ? RatingColour.ForRating(rating) : null;
 }
