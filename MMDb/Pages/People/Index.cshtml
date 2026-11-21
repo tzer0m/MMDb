@@ -16,16 +16,19 @@
             <button type="button" id="talent-filter-toggle" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-bs-toggle="collapse" data-bs-target="#talent-filter-panel" aria-controls="talent-filter-panel" aria-expanded="false">
                 Filters <span id="talent-filter-count" class="badge text-bg-secondary"></span>
             </button>
+            <button type="button" id="talent-filter-clear" class="btn btn-outline-secondary d-flex align-items-center" title="Clear Filters" aria-label="Clear Filters">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z" /></svg>
+            </button>
         </div>
         <div id="talent-paging"></div>
     </div>
     <div id="talent-filter-panel" class="collapse">
         <div class="row g-2 mb-3">
-            <div class="col-6 col-md-3 col-xl-2">
+            <div class="col-6 col-md-3 col-xl">
                 <label for="filter-film" class="form-label small mb-1">Film Title</label>
                 <input type="search" id="filter-film" name="film" value="@Model.Filter.Film" class="form-control form-control-sm" placeholder="Appeared in" />
             </div>
-            <div class="col-6 col-md-3 col-xl-2">
+            <div class="col-6 col-md-3 col-xl">
                 <label for="filter-role" class="form-label small mb-1">Role</label>
                 <select id="filter-role" name="role" class="form-select form-select-sm">
                     <option value="">Any</option>
@@ -39,9 +42,6 @@
             @{ RangeFilter("Delta", "Delta", Model.Filter.MinDelta, Model.Filter.MaxDelta, "0.1", null); }
             @{ RangeFilter($"Leads (Top {Model.LeadCount})", "Leads", Model.Filter.MinLeads, Model.Filter.MaxLeads, "1", "0"); }
             @{ RangeFilter("Film Year", "Year", Model.Filter.MinYear, Model.Filter.MaxYear, "1", null); }
-            <div class="col-12 d-flex justify-content-end">
-                <button type="button" id="talent-filter-clear" class="btn btn-sm btn-outline-secondary">Clear Filters</button>
-            </div>
         </div>
     </div>
 </form>
@@ -65,7 +65,7 @@
 @{
     void RangeFilter(string label, string name, double? min, double? max, string step, string? lowest)
     {
-        <div class="col-6 col-md-3 col-xl-2">
+        <div class="col-6 col-md-3 col-xl">
             <label for="filter-min-@name" class="form-label small mb-1">@label</label>
             <div class="input-group input-group-sm">
                 <input type="number" id="filter-min-@name" name="min@(name)" value="@min?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" class="form-control form-control-sm" placeholder="Min" aria-label="Minimum @label" />

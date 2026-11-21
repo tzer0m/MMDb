@@ -13,6 +13,9 @@
             <button type="button" id="films-filter-toggle" class="btn btn-outline-secondary d-flex align-items-center gap-2" data-bs-toggle="collapse" data-bs-target="#films-filter-panel" aria-controls="films-filter-panel" aria-expanded="false">
                 Filters <span id="films-filter-count" class="badge text-bg-secondary"></span>
             </button>
+            <button type="button" id="films-filter-clear" class="btn btn-outline-secondary d-flex align-items-center" title="Clear Filters" aria-label="Clear Filters">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z" /></svg>
+            </button>
         </div>
         @if (signedIn)
         {
@@ -29,11 +32,11 @@
     </div>
     <div id="films-filter-panel" class="collapse">
         <div class="row g-2 mb-3">
-            <div class="col-6 col-md-3 col-xl-2">
+            <div class="col-6 col-md-3 col-xl">
                 <label for="filter-director" class="form-label small mb-1">Director</label>
                 <input type="search" id="filter-director" name="director" value="@Model.Filter.Director" class="form-control form-control-sm" placeholder="Directed by" />
             </div>
-            <div class="col-6 col-md-3 col-xl-2">
+            <div class="col-6 col-md-3 col-xl">
                 <label for="filter-cast" class="form-label small mb-1">Cast</label>
                 <input type="search" id="filter-cast" name="cast" value="@Model.Filter.Cast" class="form-control form-control-sm" placeholder="Starring" />
             </div>
@@ -41,9 +44,6 @@
             @{ RangeFilter("My Rating", "Mr", Model.Filter.MinMr, Model.Filter.MaxMr, "1", "1", "10"); }
             @{ RangeFilter("Community Rating", "Cr", Model.Filter.MinCr, Model.Filter.MaxCr, "0.1", "0", "10"); }
             @{ RangeFilter("Delta", "Delta", Model.Filter.MinDelta, Model.Filter.MaxDelta, "0.1", null, null); }
-            <div class="col-12 d-flex justify-content-end">
-                <button type="button" id="films-filter-clear" class="btn btn-sm btn-outline-secondary">Clear Filters</button>
-            </div>
         </div>
     </div>
 </form>
@@ -67,7 +67,7 @@
 @{
     void RangeFilter(string label, string name, double? min, double? max, string step, string? lowest, string? highest)
     {
-        <div class="col-6 col-md-3 col-xl-2">
+        <div class="col-6 col-md-3 col-xl">
             <label for="filter-min-@name" class="form-label small mb-1">@label</label>
             <div class="input-group input-group-sm">
                 <input type="number" id="filter-min-@name" name="min@(name)" value="@min?.ToString(CultureInfo.InvariantCulture)" step="@step" min="@lowest" max="@highest" class="form-control form-control-sm" placeholder="Min" aria-label="Minimum @label" />
