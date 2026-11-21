@@ -66,7 +66,7 @@ public class IndexModel(MMDbContext db, IOptions<PeopleOptions> options) : PageM
     }
 
     /// <summary>
-    /// Sorts talent by the columns in the DataTables request, falling back to most films first, then by name.
+    /// Sorts talent by the columns in the DataTables request, matched by their data name so columns can be reordered, falling back to most films first, then by name.
     /// </summary>
     /// <param name="talent">The talent to sort.</param>
     private IEnumerable<TalentSummary> Sort(IEnumerable<TalentSummary> talent)
@@ -75,14 +75,14 @@ public class IndexModel(MMDbContext db, IOptions<PeopleOptions> options) : PageM
         for (int i = 0; int.TryParse(Request.Query[$"order[{i}][column]"].ToString(), out int column); i++)
         {
             bool descending = Request.Query[$"order[{i}][dir]"].ToString() == "desc";
-            Func<TalentSummary, object> key = column switch
+            Func<TalentSummary, object> key = Request.Query[$"columns[{column}][data]"].ToString() switch
             {
-                1 => x => x.Name,
-                3 => x => x.Roles,
-                4 => x => x.AverageMyRating,
-                5 => x => x.AverageCommunityRating ?? double.MinValue,
-                6 => x => x.Delta ?? double.MinValue,
-                7 => x => x.Leads,
+                "name" => x => x.Name,
+                "roles" => x => x.Roles,
+                "leads" => x => x.Leads,
+                "averageMyRating" => x => x.AverageMyRating,
+                "averageCommunityRating" => x => x.AverageCommunityRating ?? double.MinValue,
+                "delta" => x => x.Delta ?? double.MinValue,
                 _ => x => x.FilmCount
             };
             sorted = sorted is null ? descending ? talent.OrderByDescending(key) : talent.OrderBy(key) : descending ? sorted.ThenByDescending(key) : sorted.ThenBy(key);

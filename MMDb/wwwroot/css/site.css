@@ -57,6 +57,12 @@
   }
 }
 
+/* Keeps rows the same height when a person or film has no picture. */
+.film-table .photo-placeholder {
+  width: 43px;
+  height: 64px;
+}
+
 /* Smaller text, badges and posters on phones. */
 @media (max-width: 767.98px) {
   .detail-header h1 {
@@ -75,7 +81,8 @@
     font-size: 0.875rem !important;
   }
 
-  .film-table img {
+  .film-table img,
+  .film-table .photo-placeholder {
     width: 32px;
     height: 48px;
   }

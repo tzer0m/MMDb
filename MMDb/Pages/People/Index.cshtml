@@ -109,7 +109,7 @@
             pageLength: 100,
             createdRow: row => row.classList.add('position-relative'),
             columns: [
-                { data: 'profilePath', orderable: false, createdCell: cell => cell.classList.add('p-1'), render: path => path ? `<img src="${imageBaseUrl}${escapeHtml(path)}" alt="" class="rounded object-fit-cover" width="43" height="64" loading="lazy" />` : '' },
+                { data: 'profilePath', orderable: false, createdCell: cell => cell.classList.add('p-1'), render: path => path ? `<img src="${imageBaseUrl}${escapeHtml(path)}" alt="" class="rounded object-fit-cover" width="43" height="64" loading="lazy" />` : '<div class="photo-placeholder"></div>' },
                 { data: 'name', createdCell: cell => cell.style.cssText = 'max-width: 0; width: 100%', render: (name, type, person) => `<div class="text-truncate" title="${escapeHtml(name)}"><a href="${personUrl}${person.personId}" class="stretched-link text-reset text-decoration-none">${escapeHtml(name)}</a></div><div class="d-flex d-md-none align-items-center gap-2 mt-1"><span class="text-truncate text-muted small">${person.filmCount} ${person.filmCount === 1 ? 'film' : 'films'} &middot; ${person.roles}</span>${ratingBadge(person.averageMyRating, person.myRatingColour, 'ms-auto', 'Average My Rating')}${ratingBadge(person.averageCommunityRating, person.communityRatingColour, '', 'Average Community Rating')}</div>` },
                 { data: 'filmCount', className: 'd-none d-md-table-cell text-center' },
                 { data: 'roles', className: 'd-none d-md-table-cell text-center text-nowrap' },
