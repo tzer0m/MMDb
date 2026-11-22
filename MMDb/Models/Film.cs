@@ -157,7 +157,7 @@ public class Film
     /// The tooltip for my rating, mentioning the original rating.
     /// </summary>
     [NotMapped]
-    public string MyRatingTitle => MyScore is null ? "My Rating (not ranked yet)" : $"My Rating (originally {Rating})";
+    public string MyRatingTitle => MyScore is null ? "My Rating (not ranked yet)" : $"My Rating (Originally {Rating})";
 
     /// <summary>
     /// The critics rating pushed to Jellyfin, out of 100: the score once settled, otherwise the original rating times 10.
