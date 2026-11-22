@@ -40,12 +40,12 @@ public class FilmFilter
     /// <summary>
     /// The lowest my rating.
     /// </summary>
-    public int? MinMr { get; set; }
+    public double? MinMr { get; set; }
 
     /// <summary>
     /// The highest my rating.
     /// </summary>
-    public int? MaxMr { get; set; }
+    public double? MaxMr { get; set; }
 
     /// <summary>
     /// The lowest community rating.
@@ -75,6 +75,6 @@ public class FilmFilter
     public bool Matches(Film film, HashSet<int>? castFilmIds)
     {
         bool rated = film.FilmId != 0;
-        return FilterMatch.Contains(film.Title, Title) && FilterMatch.Contains(film.Director, Director) && (castFilmIds is null || castFilmIds.Contains(film.FilmId)) && (Status != "watched" || rated) && (Status != "unwatched" || !rated) && FilterMatch.InRange(film.Year, MinYear, MaxYear) && FilterMatch.InRange(rated ? film.Rating : (int?)null, MinMr, MaxMr) && FilterMatch.InRange(film.CommunityRating, MinCr, MaxCr) && FilterMatch.InRange(rated ? film.RatingDelta : null, MinDelta, MaxDelta);
+        return FilterMatch.Contains(film.Title, Title) && FilterMatch.Contains(film.Director, Director) && (castFilmIds is null || castFilmIds.Contains(film.FilmId)) && (Status != "watched" || rated) && (Status != "unwatched" || !rated) && FilterMatch.InRange(film.Year, MinYear, MaxYear) && FilterMatch.InRange(rated ? film.MyRating : null, MinMr, MaxMr) && FilterMatch.InRange(film.CommunityRating, MinCr, MaxCr) && FilterMatch.InRange(rated ? film.RatingDelta : null, MinDelta, MaxDelta);
     }
 }

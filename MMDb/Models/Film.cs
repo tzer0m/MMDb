@@ -94,7 +94,7 @@ public class Film
     public DateTime? RatingsUpdatedAt { get; set; }
 
     /// <summary>
-    /// My rating, from 1 to 10.
+    /// My original rating, from 1 to 10, from before films were ranked by comparison.
     /// </summary>
     public int Rating { get; set; }
 
@@ -130,10 +130,40 @@ public class Film
     public double? CommunityRating => CommunityRatingCalculator.Calculate(TMDbRating, IMDbRating, RottenTomatoes, Metacritic);
 
     /// <summary>
-    /// My rating minus the community rating, with my 1 to 10 rating stretched onto the community's 0 to 10 scale: positive if I rate it higher, negative if the community does.
+    /// My rating minus the community rating, both out of 10, using the original rating stretched onto the same scale until the score is settled: positive if I rate it higher, negative if the community does.
     /// </summary>
     [NotMapped]
-    public double? RatingDelta => CommunityRating is double communityRating ? Math.Round(RatingScale.FromOneToTen(Rating) - communityRating, 1) : null;
+    public double? RatingDelta => CommunityRating is double communityRating ? Math.Round((MyScore ?? RatingScale.FromOneToTen(Rating)) - communityRating, 1) : null;
+
+    /// <summary>
+    /// My score out of 10 to one decimal place, from the settled 1 to 100 score, or null until it is settled.
+    /// </summary>
+    [NotMapped]
+    public double? MyScore => FilmScore?.ShownScore is int shown ? shown / 10.0 : null;
+
+    /// <summary>
+    /// My rating as shown: the score out of 10 once settled, otherwise the original rating.
+    /// </summary>
+    [NotMapped]
+    public double MyRating => MyScore ?? Rating;
+
+    /// <summary>
+    /// My rating formatted for display, with one decimal place once settled.
+    /// </summary>
+    [NotMapped]
+    public string MyRatingText => MyScore is double score ? score.ToString("0.0") : Rating.ToString();
+
+    /// <summary>
+    /// The tooltip for my rating, mentioning the original rating.
+    /// </summary>
+    [NotMapped]
+    public string MyRatingTitle => MyScore is null ? "My Rating (not ranked yet)" : $"My Rating (originally {Rating})";
+
+    /// <summary>
+    /// The critics rating pushed to Jellyfin, out of 100: the score once settled, otherwise the original rating times 10.
+    /// </summary>
+    [NotMapped]
+    public int CriticRating => FilmScore?.ShownScore ?? Rating * 10;
 
     /// <summary>
     /// The runtime formatted as hours and minutes.

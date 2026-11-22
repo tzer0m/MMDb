@@ -49,9 +49,9 @@ public class TalentSummary
     public int Leads { get; set; }
 
     /// <summary>
-    /// My average rating, stretched onto the community's 0 to 10 scale, minus the average community rating, if there is one.
+    /// My average rating minus the average community rating, if there is one.
     /// </summary>
-    public double? Delta => AverageCommunityRating is double communityRating ? Math.Round(RatingScale.FromOneToTen(AverageMyRating) - communityRating, 1) : null;
+    public double? Delta => AverageCommunityRating is double communityRating ? Math.Round(AverageMyRating - communityRating, 1) : null;
 
     /// <summary>
     /// Their films I have rated, used for filtering by title and year.

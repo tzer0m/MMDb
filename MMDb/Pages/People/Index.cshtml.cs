@@ -55,7 +55,7 @@ public class IndexModel(MMDbContext db, IOptions<PeopleOptions> options) : PageM
     /// <param name="cancellationToken">The cancellation token.</param>
     private async Task<List<TalentSummary>> LoadTalentAsync(CancellationToken cancellationToken)
     {
-        Dictionary<int, Film> films = await db.Films.AsNoTracking().Select(x => new Film { FilmId = x.FilmId, Title = x.Title, Year = x.Year, Rating = x.Rating, TMDbRating = x.TMDbRating, IMDbRating = x.IMDbRating, RottenTomatoes = x.RottenTomatoes, Metacritic = x.Metacritic }).ToDictionaryAsync(x => x.FilmId, cancellationToken);
+        Dictionary<int, Film> films = await db.Films.AsNoTracking().Select(x => new Film { FilmId = x.FilmId, Title = x.Title, Year = x.Year, Rating = x.Rating, FilmScore = x.FilmScore, TMDbRating = x.TMDbRating, IMDbRating = x.IMDbRating, RottenTomatoes = x.RottenTomatoes, Metacritic = x.Metacritic }).ToDictionaryAsync(x => x.FilmId, cancellationToken);
         List<FilmCredit> credits = await db.FilmCredits.AsNoTracking().Select(x => new FilmCredit { FilmId = x.FilmId, PersonId = x.PersonId, Role = x.Role, Order = x.Order, Person = new Person { PersonId = x.PersonId, Name = x.Person.Name, ProfilePath = x.Person.ProfilePath } }).ToListAsync(cancellationToken);
         return [.. credits.GroupBy(x => x.PersonId).Select(x => ToSummary(x, films))];
     }
@@ -90,6 +90,6 @@ public class IndexModel(MMDbContext db, IOptions<PeopleOptions> options) : PageM
         List<double> communityRatings = [.. personFilms.Where(x => x.CommunityRating is not null).Select(x => x.CommunityRating!.Value)];
         Person person = credits.First().Person;
         int leads = credits.Where(x => x.Role == CreditRole.Cast && x.Order < options.Value.LeadCount).Select(x => x.FilmId).Distinct().Count();
-        return new TalentSummary { PersonId = person.PersonId, Name = person.Name, ProfilePath = person.ProfilePath, FilmCount = personFilms.Count, Roles = string.Join("/", credits.Select(x => x.Role).Distinct().Order().Select(x => x == CreditRole.Director ? "D" : "A")), AverageMyRating = Math.Round(personFilms.Average(x => x.Rating), 1), AverageCommunityRating = communityRatings.Count == 0 ? null : Math.Round(communityRatings.Average(), 1), Leads = leads, Films = personFilms };
+        return new TalentSummary { PersonId = person.PersonId, Name = person.Name, ProfilePath = person.ProfilePath, FilmCount = personFilms.Count, Roles = string.Join("/", credits.Select(x => x.Role).Distinct().Order().Select(x => x == CreditRole.Director ? "D" : "A")), AverageMyRating = Math.Round(personFilms.Average(x => x.MyRating), 1), AverageCommunityRating = communityRatings.Count == 0 ? null : Math.Round(communityRatings.Average(), 1), Leads = leads, Films = personFilms };
     }
 }

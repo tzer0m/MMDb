@@ -39,12 +39,12 @@ public partial class FilmPeopleService(MMDbContext db, TMDbClient tmdb, IMemoryC
             personIds.Add(people.Director.PersonId);
         }
         personIds = [.. personIds.Distinct()];
-        List<FilmCredit> otherCredits = await db.FilmCredits.AsNoTracking().Include(x => x.Film).Where(x => personIds.Contains(x.PersonId) && x.FilmId != excludeFilmId).ToListAsync(cancellationToken);
+        List<FilmCredit> otherCredits = await db.FilmCredits.AsNoTracking().Include(x => x.Film).ThenInclude(x => x.FilmScore).Where(x => personIds.Contains(x.PersonId) && x.FilmId != excludeFilmId).ToListAsync(cancellationToken);
         TMDbPersonCredits?[] personCredits = await Task.WhenAll(personIds.Select(x => GetPersonCreditsAsync(x, cancellationToken)));
         Dictionary<int, HashSet<int>> tmdbIdsByPerson = personIds.Zip(personCredits).ToDictionary(x => x.First, x => x.Second is null ? [] : x.Second.Cast.Select(c => c.Id).Concat(x.Second.Crew.Where(c => c.Job == "Director").Select(c => c.Id)).ToHashSet());
         List<int> tmdbIds = [.. tmdbIdsByPerson.Values.SelectMany(x => x).Distinct()];
-        List<Film> creditedFilms = await db.Films.AsNoTracking().Where(x => x.TMDbId != null && tmdbIds.Contains(x.TMDbId.Value) && x.FilmId != excludeFilmId).ToListAsync(cancellationToken);
-        people.OtherFilms = personIds.ToDictionary(personId => personId, personId => otherCredits.Where(x => x.PersonId == personId).Select(x => x.Film).Concat(creditedFilms.Where(x => tmdbIdsByPerson[personId].Contains(x.TMDbId!.Value))).DistinctBy(x => x.FilmId).OrderByDescending(x => x.Rating).ThenBy(x => x.Title).ToList());
+        List<Film> creditedFilms = await db.Films.AsNoTracking().Include(x => x.FilmScore).Where(x => x.TMDbId != null && tmdbIds.Contains(x.TMDbId.Value) && x.FilmId != excludeFilmId).ToListAsync(cancellationToken);
+        people.OtherFilms = personIds.ToDictionary(personId => personId, personId => otherCredits.Where(x => x.PersonId == personId).Select(x => x.Film).Concat(creditedFilms.Where(x => tmdbIdsByPerson[personId].Contains(x.TMDbId!.Value))).DistinctBy(x => x.FilmId).OrderByDescending(x => x.MyRating).ThenBy(x => x.Title).ToList());
         return people;
     }
 

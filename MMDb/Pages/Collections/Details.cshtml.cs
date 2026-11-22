@@ -28,7 +28,7 @@ public class DetailsModel(MMDbContext db, JellyfinClient jellyfin) : PageModel
     /// <summary>
     /// My average rating across the films I have rated.
     /// </summary>
-    public double? AverageMyRating => Films.Any(x => x.FilmId != 0) ? Films.Where(x => x.FilmId != 0).Average(x => x.Rating) : null;
+    public double? AverageMyRating => Films.Any(x => x.FilmId != 0) ? Films.Where(x => x.FilmId != 0).Average(x => x.MyRating) : null;
 
     /// <summary>
     /// The average community rating across the films that have one.
@@ -64,7 +64,7 @@ public class DetailsModel(MMDbContext db, JellyfinClient jellyfin) : PageModel
         Name = collection.Name;
         List<int> tmdbIds = [.. collection.Movies.Select(x => x.TMDbId).OfType<int>()];
         List<string> imdbIds = [.. collection.Movies.Select(x => x.IMDbId).OfType<string>()];
-        List<Film> rated = await db.Films.AsNoTracking().Where(x => (x.TMDbId != null && tmdbIds.Contains(x.TMDbId.Value)) || (x.IMDbId != null && imdbIds.Contains(x.IMDbId))).ToListAsync(cancellationToken);
+        List<Film> rated = await db.Films.AsNoTracking().Include(x => x.FilmScore).Where(x => (x.TMDbId != null && tmdbIds.Contains(x.TMDbId.Value)) || (x.IMDbId != null && imdbIds.Contains(x.IMDbId))).ToListAsync(cancellationToken);
         Dictionary<int, LibraryFilm> library = await db.LibraryFilms.AsNoTracking().Where(x => tmdbIds.Contains(x.TMDbId)).ToDictionaryAsync(x => x.TMDbId, cancellationToken);
         List<string> libraryImdbIds = [.. library.Values.Select(x => x.IMDbId).OfType<string>()];
         Dictionary<string, OMDbCacheEntry> ratings = await db.OMDbCache.AsNoTracking().Where(x => libraryImdbIds.Contains(x.IMDbId)).ToDictionaryAsync(x => x.IMDbId, StringComparer.OrdinalIgnoreCase, cancellationToken);

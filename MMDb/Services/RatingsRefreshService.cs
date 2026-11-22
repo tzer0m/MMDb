@@ -121,7 +121,7 @@ public partial class RatingsRefreshService(IServiceScopeFactory scopeFactory, IO
         using IServiceScope scope = scopeFactory.CreateScope();
         MMDbContext db = scope.ServiceProvider.GetRequiredService<MMDbContext>();
         JellyfinClient jellyfin = scope.ServiceProvider.GetRequiredService<JellyfinClient>();
-        List<Film> films = await db.Films.AsNoTracking().ToListAsync(cancellationToken);
+        List<Film> films = await db.Films.AsNoTracking().Include(x => x.FilmScore).ToListAsync(cancellationToken);
         Dictionary<string, Film> byIMDbId = films.Where(x => x.IMDbId is not null).GroupBy(x => x.IMDbId!, StringComparer.OrdinalIgnoreCase).ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
         Dictionary<int, Film> byTMDbId = films.Where(x => x.TMDbId is not null).GroupBy(x => x.TMDbId!.Value).ToDictionary(x => x.Key, x => x.First());
         List<JellyfinItem> items = await jellyfin.GetMoviesAsync(cancellationToken);
@@ -137,11 +137,11 @@ public partial class RatingsRefreshService(IServiceScopeFactory scopeFactory, IO
             {
                 byTMDbId.TryGetValue(tmdbId, out film);
             }
-            if (film is null || item.CriticRating == film.Rating)
+            if (film is null || item.CriticRating == film.CriticRating)
             {
                 continue;
             }
-            await jellyfin.SetCriticRatingAsync(item.Id, film.Rating, cancellationToken);
+            await jellyfin.SetCriticRatingAsync(item.Id, film.CriticRating, cancellationToken);
             repushed++;
         }
         LogRepushed(logger, repushed);

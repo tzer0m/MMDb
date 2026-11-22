@@ -59,7 +59,7 @@
         <div class="d-flex align-items-stretch gap-2 flex-shrink-0">
             @if (isRated)
             {
-                <span class="badge fs-2 rating-lg text-black" style="@RatingColour.StyleForRating(Model.Rating)" title="My Rating">@Model.Rating</span>
+                <span class="badge fs-2 rating-lg text-black" style="@RatingColour.StyleForRating(Model.MyRating)" title="@Model.MyRatingTitle">@Model.MyRatingText</span>
             }
             else
             {

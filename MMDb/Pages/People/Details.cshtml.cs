@@ -73,7 +73,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
     /// <summary>
     /// My average rating across their films.
     /// </summary>
-    public double? AverageMyRating => Films.Count == 0 ? null : Films.Average(x => x.Rating);
+    public double? AverageMyRating => Films.Count == 0 ? null : Films.Average(x => x.MyRating);
 
     /// <summary>
     /// The average community rating across their films that have one.
@@ -175,7 +175,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
             }
         }
         Person = person;
-        List<FilmCredit> credits = await db.FilmCredits.AsNoTracking().Include(x => x.Film).Where(x => x.PersonId == id).ToListAsync(cancellationToken);
+        List<FilmCredit> credits = await db.FilmCredits.AsNoTracking().Include(x => x.Film).ThenInclude(x => x.FilmScore).Where(x => x.PersonId == id).ToListAsync(cancellationToken);
         List<Film> films = [.. credits.Select(x => x.Film).DistinctBy(x => x.FilmId)];
         Roles = credits.GroupBy(x => x.FilmId).ToDictionary(x => x.Key, x => string.Join(", ", x.OrderBy(c => c.Role).Select(c => c.Role == CreditRole.Director ? "Director" : c.Character ?? "Cast")));
         Billing = credits.Where(x => x.Role == CreditRole.Cast).GroupBy(x => x.FilmId).ToDictionary(x => x.Key, x => x.Min(c => c.Order) + 1);
@@ -186,7 +186,7 @@ public partial class DetailsModel(MMDbContext db, FilmDataService filmData, Film
             List<TMDbPersonCredit> all = [.. tmdbCredits.Cast, .. tmdbCredits.Crew.Where(x => x.Job == "Director")];
             List<int> tmdbIds = [.. all.Select(x => x.Id).Distinct()];
             List<int> knownIds = [.. films.Select(x => x.FilmId)];
-            List<Film> extra = await db.Films.AsNoTracking().Where(x => x.TMDbId != null && tmdbIds.Contains(x.TMDbId.Value) && !knownIds.Contains(x.FilmId)).ToListAsync(cancellationToken);
+            List<Film> extra = await db.Films.AsNoTracking().Include(x => x.FilmScore).Where(x => x.TMDbId != null && tmdbIds.Contains(x.TMDbId.Value) && !knownIds.Contains(x.FilmId)).ToListAsync(cancellationToken);
             foreach (Film film in extra)
             {
                 Roles[film.FilmId] = DescribeRole(all.Where(x => x.Id == film.TMDbId));

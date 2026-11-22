@@ -37,7 +37,7 @@ public class IndexModel(MMDbContext db, PosterService posters) : PageModel
     public async Task<JsonResult> OnGetDataAsync([FromQuery] FilmFilter filter, CancellationToken cancellationToken)
     {
         DataTablesRequest request = DataTablesRequest.FromQuery(Request.Query);
-        List<Film> films = await db.Films.AsNoTracking().Select(x => new Film { FilmId = x.FilmId, TMDbId = x.TMDbId, IMDbId = x.IMDbId, Title = x.Title, Year = x.Year, Director = x.Director, PosterPath = x.PosterPath, TMDbRating = x.TMDbRating, IMDbRating = x.IMDbRating, RottenTomatoes = x.RottenTomatoes, Metacritic = x.Metacritic, Rating = x.Rating, WatchedOn = x.WatchedOn }).ToListAsync(cancellationToken);
+        List<Film> films = await db.Films.AsNoTracking().Select(x => new Film { FilmId = x.FilmId, TMDbId = x.TMDbId, IMDbId = x.IMDbId, Title = x.Title, Year = x.Year, Director = x.Director, PosterPath = x.PosterPath, TMDbRating = x.TMDbRating, IMDbRating = x.IMDbRating, RottenTomatoes = x.RottenTomatoes, Metacritic = x.Metacritic, Rating = x.Rating, FilmScore = x.FilmScore, WatchedOn = x.WatchedOn }).ToListAsync(cancellationToken);
         if (User.Identity?.IsAuthenticated == true && filter.Status != "watched")
         {
             films.AddRange(await LoadUnratedAsync(films, cancellationToken));
@@ -90,7 +90,7 @@ public class IndexModel(MMDbContext db, PosterService posters) : PageModel
             "title" => x => x.Title,
             "year" => x => x.Year ?? int.MinValue,
             "director" => x => x.Director ?? string.Empty,
-            "rating" => x => x.FilmId == 0 ? 0 : x.Rating,
+            "rating" => x => x.FilmId == 0 ? 0 : x.MyRating,
             "communityRating" => x => x.CommunityRating ?? double.MinValue,
             "delta" => x => x.FilmId == 0 ? double.MinValue : x.RatingDelta ?? double.MinValue,
             _ => x => x.WatchedOn ?? DateOnly.MinValue
@@ -107,6 +107,6 @@ public class IndexModel(MMDbContext db, PosterService posters) : PageModel
         bool rated = film.FilmId != 0;
         string url = (rated ? Url.Page("/Films/Details", new { id = film.FilmId }) : Url.Page("/Films/Preview", new { tmdbId = film.TMDbId })) ?? string.Empty;
         string? posterUrl = await posters.UrlAsync(film.TMDbId, film.IMDbId, film.PosterPath, 92, cancellationToken);
-        return new FilmRow { Url = url, PosterUrl = posterUrl, Title = film.Title, Year = film.Year, Director = film.Director, Rating = rated ? film.Rating : null, RatingColour = rated ? RatingColour.ForRating(film.Rating) : null, CommunityRating = film.CommunityRating, CommunityRatingColour = film.CommunityRating is double communityRating ? RatingColour.ForRating(communityRating) : null, Delta = rated ? film.RatingDelta : null, WatchedOn = film.WatchedOn };
+        return new FilmRow { Url = url, PosterUrl = posterUrl, Title = film.Title, Year = film.Year, Director = film.Director, Rating = rated ? film.MyRating : null, RatingText = rated ? film.MyRatingText : null, RatingTitle = rated ? film.MyRatingTitle : null, RatingColour = rated ? RatingColour.ForRating(film.MyRating) : null, CommunityRating = film.CommunityRating, CommunityRatingColour = film.CommunityRating is double communityRating ? RatingColour.ForRating(communityRating) : null, Delta = rated ? film.RatingDelta : null, WatchedOn = film.WatchedOn };
     }
 }

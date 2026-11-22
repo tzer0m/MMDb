@@ -31,9 +31,19 @@ public class FilmRow
     public string? Director { get; set; }
 
     /// <summary>
-    /// My rating, or null if it is unrated.
+    /// My rating out of 10, or null if it is unrated.
     /// </summary>
-    public int? Rating { get; set; }
+    public double? Rating { get; set; }
+
+    /// <summary>
+    /// My rating formatted for display.
+    /// </summary>
+    public string? RatingText { get; set; }
+
+    /// <summary>
+    /// The tooltip for my rating, mentioning the original rating.
+    /// </summary>
+    public string? RatingTitle { get; set; }
 
     /// <summary>
     /// The background colour for my rating.

@@ -40,7 +40,7 @@ public class IndexModel(MMDbContext db, IOptions<ChartOptions> chartOptions) : P
     /// </summary>
     public async Task OnGetAsync()
     {
-        Films = await db.Films.AsNoTracking().OrderByDescending(x => x.WatchedOn).ThenBy(x => x.Title).ToListAsync();
+        Films = await db.Films.AsNoTracking().Include(x => x.FilmScore).OrderByDescending(x => x.WatchedOn).ThenBy(x => x.Title).ToListAsync();
         MyRatingCounts = RatingDistribution.ForMyRatings(Films);
         CommunityRatingCounts = RatingDistribution.ForCommunityRatings(Films);
         WatchedCounts = WatchedDistribution.ForWeeks(Films, chartOptions.Value.WatchedStartDate);

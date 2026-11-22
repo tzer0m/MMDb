@@ -16,7 +16,7 @@ public static class RatingDistribution
         int[] counts = new int[10];
         foreach (Film film in films)
         {
-            counts[Math.Clamp(film.Rating, 1, 10) - 1]++;
+            counts[Math.Clamp((int)Math.Ceiling(Math.Round(film.MyRating, 1)), 1, 10) - 1]++;
         }
         return counts;
     }

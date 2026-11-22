@@ -72,7 +72,7 @@ public partial class EditModel(MMDbContext db, FilmDataService filmData, Jellyfi
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
-        Film? film = await db.Films.FirstOrDefaultAsync(x => x.FilmId == Id, cancellationToken);
+        Film? film = await db.Films.Include(x => x.FilmScore).FirstOrDefaultAsync(x => x.FilmId == Id, cancellationToken);
         if (film is null)
         {
             return NotFound();

@@ -35,7 +35,7 @@ public class ChartsModel(MMDbContext db, IOptions<ChartOptions> chartOptions) : 
     /// </summary>
     public async Task OnGetAsync()
     {
-        List<Film> films = await db.Films.AsNoTracking().ToListAsync();
+        List<Film> films = await db.Films.AsNoTracking().Include(x => x.FilmScore).ToListAsync();
         MyRatingCounts = RatingDistribution.ForMyRatings(films);
         CommunityRatingCounts = RatingDistribution.ForCommunityRatings(films);
         WatchedCounts = WatchedDistribution.ForWeeks(films, chartOptions.Value.WatchedStartDate);

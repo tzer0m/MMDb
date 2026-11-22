@@ -87,7 +87,7 @@
                 </td>
                 <td class="d-none d-md-table-cell" data-order="@(film.Year ?? 9999)">@film.Year</td>
                 <td class="d-none d-md-table-cell text-nowrap">@film.Director</td>
-                <td class="d-none d-md-table-cell text-center" data-order="@(isRated ? film.Rating : 0)">@{ MyRating(film, isRated, "fs-5"); }</td>
+                <td class="d-none d-md-table-cell text-center" data-order="@(isRated ? film.MyRating : 0)">@{ MyRating(film, isRated, "fs-5"); }</td>
                 <td class="d-none d-md-table-cell text-center" data-order="@(film.CommunityRating ?? -1)">
                     @if (film.CommunityRating is double communityRating)
                     {
@@ -106,7 +106,7 @@
     {
         if (isRated)
         {
-            <span class="badge text-black @extraClass" style="@RatingColour.StyleForRating(film.Rating)" title="My Rating">@film.Rating</span>
+            <span class="badge text-black @extraClass" style="@RatingColour.StyleForRating(film.MyRating)" title="@film.MyRatingTitle">@film.MyRatingText</span>
         }
         else
         {
