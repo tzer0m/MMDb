@@ -98,7 +98,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
             // A film about to settle far from its original rating is first asked about films it jumped past, to catch a hasty answer.
             if (check is null && !score.IsAnchor && state.Checks < options.Value.BigMoveChecks)
             {
-                check = PickBigMoveCheck(film, state, pool);
+                check = await PickBigMoveCheckAsync(film, state, scores, pool, cancellationToken);
                 question.IsCheck = check is not null;
             }
             if (check is null)
@@ -150,6 +150,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         score.UpdatedAt = DateTime.UtcNow;
         await SyncLinkedAsync([score], cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        await RespaceAsync(cancellationToken);
         return last.FilmId;
     }
 
@@ -219,6 +220,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
             score.UpdatedAt = now;
         }
         await db.SaveChangesAsync(cancellationToken);
+        await RespaceAsync(cancellationToken);
     }
 
     /// <summary>
@@ -284,20 +286,98 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
     }
 
     /// <summary>
-    /// Picks a random settled film between where a film is heading and its original band, if it's heading far enough from its original rating to double-check; null otherwise or if there are none left to ask.
+    /// Picks a random settled film it jumped past, if a film is heading far enough by position from its original rating to double-check; null otherwise or if there are none left to ask.
     /// </summary>
     /// <param name="film">The film being ranked.</param>
     /// <param name="state">Its placement state.</param>
+    /// <param name="scores">Every film's score, keyed by film ID.</param>
     /// <param name="pool">The settled films it hasn't been asked about.</param>
-    private FilmScore? PickBigMoveCheck(Film film, RankingState state, List<FilmScore> pool)
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task<FilmScore?> PickBigMoveCheckAsync(Film film, RankingState state, Dictionary<int, FilmScore> scores, List<FilmScore> pool, CancellationToken cancellationToken)
     {
-        int targetBand = FilmScore.BandFor(SettledScore(state));
+        double target = SettledScore(state);
+        List<FilmScore> settled = [.. scores.Values.Where(x => x.IsSettled && x.LinkedToFilmId is null && x.FilmId != film.FilmId)];
+        Dictionary<int, int> ratings = await LoadRatingsAsync(cancellationToken);
+        int[] bandSizes = BandSizes(settled, ratings);
+        bandSizes[film.Rating]++;
+        int targetBand = BandAtPosition(settled.Count(x => x.Score < target) + 1, bandSizes);
         if (Math.Abs(targetBand - film.Rating) < options.Value.BigMoveBands)
         {
             return null;
         }
-        List<FilmScore> between = targetBand < film.Rating ? [.. pool.Where(x => x.Score >= state.Upper && x.Score <= (film.Rating - 1) * 10)] : [.. pool.Where(x => x.Score <= state.Lower && x.Score >= film.Rating * 10)];
+        List<FilmScore> between = targetBand < film.Rating ? [.. pool.Where(x => x.Score >= state.Upper && FilmScore.BandFor(x.DisplayScore ?? x.Score) < film.Rating)] : [.. pool.Where(x => x.Score <= state.Lower && FilmScore.BandFor(x.DisplayScore ?? x.Score) > film.Rating)];
         return between.Count == 0 ? null : between[Random.Shared.Next(between.Count)];
+    }
+
+    /// <summary>
+    /// Works out every settled film's shown score from its position: films are ordered by raw score, and each band gets as many of them as were originally rated that band, spread evenly across it, so the scores keep the shape of the original ratings; linked films copy their main film and unsettled films have none.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task RespaceAsync(CancellationToken cancellationToken = default)
+    {
+        List<FilmScore> scores = await db.FilmScores.ToListAsync(cancellationToken);
+        Dictionary<int, int> ratings = await LoadRatingsAsync(cancellationToken);
+        List<FilmScore> settled = [.. scores.Where(x => x.IsSettled && x.LinkedToFilmId is null).OrderBy(x => x.Score).ThenBy(x => x.FilmId)];
+        int[] bandSizes = BandSizes(settled, ratings);
+        int index = 0;
+        for (int band = 1; band <= 10; band++)
+        {
+            // Stays above the band's lower edge plus a half, so every score still shows as that band once rounded.
+            for (int i = 0; i < bandSizes[band]; i++)
+            {
+                settled[index++].DisplayScore = (band - 1) * 10 + 0.5 + (i + 0.5) * 9.5 / bandSizes[band];
+            }
+        }
+        Dictionary<int, FilmScore> byId = scores.ToDictionary(x => x.FilmId);
+        foreach (FilmScore score in scores.Where(x => !x.IsSettled || x.LinkedToFilmId is not null))
+        {
+            score.DisplayScore = score.IsSettled && score.LinkedToFilmId is int mainId && byId.TryGetValue(mainId, out FilmScore? main) ? main.DisplayScore : null;
+        }
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Counts films by their original rating, indexed by rating from 1 to 10.
+    /// </summary>
+    /// <param name="films">The films to count.</param>
+    /// <param name="ratings">Every film's original rating, keyed by film ID.</param>
+    private static int[] BandSizes(IEnumerable<FilmScore> films, Dictionary<int, int> ratings)
+    {
+        int[] sizes = new int[11];
+        foreach (FilmScore film in films)
+        {
+            sizes[ratings[film.FilmId]]++;
+        }
+        return sizes;
+    }
+
+    /// <summary>
+    /// Returns the band a position falls in, counting from the lowest film, when each band holds the given number of films.
+    /// </summary>
+    /// <param name="position">The position, from 1 for the lowest film.</param>
+    /// <param name="bandSizes">How many films each band holds, indexed by band from 1 to 10.</param>
+    private static int BandAtPosition(int position, int[] bandSizes)
+    {
+        int upTo = 0;
+        for (int band = 1; band <= 10; band++)
+        {
+            upTo += bandSizes[band];
+            if (position <= upTo)
+            {
+                return band;
+            }
+        }
+        return 10;
+    }
+
+    /// <summary>
+    /// Loads every film's original 1 to 10 rating, keyed by film ID.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task<Dictionary<int, int>> LoadRatingsAsync(CancellationToken cancellationToken)
+    {
+        List<KeyValuePair<int, int>> ratings = await db.Films.Select(x => new KeyValuePair<int, int>(x.FilmId, x.Rating)).ToListAsync(cancellationToken);
+        return ratings.ToDictionary();
     }
 
     /// <summary>
@@ -325,8 +405,9 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         score.UpdatedAt = now;
         await SyncLinkedAsync([score], cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        await RespaceAsync(cancellationToken);
         LogSettled(logger, film.Title, score.Score);
-        return $"{film.Title} settled at {score.DisplayScore}.";
+        return $"{film.Title} settled at {score.ShownScore}.";
     }
 
     /// <summary>
@@ -361,6 +442,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         score.UpdatedAt = now;
         await SyncLinkedAsync([score, .. clashing.Select(x => scores[x])], cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+        await RespaceAsync(cancellationToken);
         List<string> titles = await db.Films.Where(x => clashing.Contains(x.FilmId)).Select(x => x.Title).ToListAsync(cancellationToken);
         LogRestarted(logger, film.Title, string.Join(", ", titles));
         if (!knockBack)

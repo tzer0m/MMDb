@@ -32,7 +32,7 @@
                                             @score.Film.Title <span class="text-muted">@(score.Film.Year is int year ? $"({year})" : "")</span>
                                             @if (score.IsSettled)
                                             {
-                                                <span class="badge text-bg-secondary">@score.DisplayScore</span>
+                                                <span class="badge text-bg-secondary">@score.ShownScore</span>
                                             }
                                         </label>
                                     </div>

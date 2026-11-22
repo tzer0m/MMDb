@@ -18,9 +18,14 @@ public class FilmScore
     public Film Film { get; set; } = null!;
 
     /// <summary>
-    /// The score, from just above 0 to 100; seeded from the original rating until comparisons settle it.
+    /// The raw score, from just above 0 to 100, which only orders films for ranking; seeded from the original rating until comparisons settle it.
     /// </summary>
     public double Score { get; set; }
+
+    /// <summary>
+    /// The score that is shown, from the film's position among settled films spread to match the shape of the original ratings; null until settled.
+    /// </summary>
+    public double? DisplayScore { get; set; }
 
     /// <summary>
     /// Whether enough comparisons have pinned the score down for it to be shown and compared against.
@@ -58,13 +63,13 @@ public class FilmScore
     public DateTime UpdatedAt { get; set; }
 
     /// <summary>
-    /// The score as a whole number from 1 to 100, as it is shown.
+    /// The shown score as a whole number from 1 to 100, or null until settled.
     /// </summary>
     [NotMapped]
-    public int DisplayScore => DisplayFor(Score);
+    public int? ShownScore => DisplayScore is double displayScore ? DisplayFor(displayScore) : null;
 
     /// <summary>
-    /// The 1 to 10 band the score falls in, matching the original rating scale.
+    /// The 1 to 10 band the raw score falls in, which is where ranking starts looking for comparisons.
     /// </summary>
     [NotMapped]
     public int Band => BandFor(Score);

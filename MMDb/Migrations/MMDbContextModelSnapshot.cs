@@ -170,6 +170,9 @@ namespace MMDb.Migrations
                     b.Property<int>("FilmId")
                         .HasColumnType("integer");
 
+                    b.Property<double?>("DisplayScore")
+                        .HasColumnType("double precision");
+
                     b.Property<bool>("IsAnchor")
                         .HasColumnType("boolean");
 
