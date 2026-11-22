@@ -1,14 +1,19 @@
 namespace MMDb.Options;
 
 /// <summary>
-/// Configuration for the background job that refreshes external ratings.
+/// Configuration for the background jobs that refresh external ratings and keep Jellyfin's ratings in step.
 /// </summary>
 public class RatingsRefreshOptions
 {
     /// <summary>
-    /// How often the job runs.
+    /// How often external ratings are refreshed and the library list is synced.
     /// </summary>
     public TimeSpan Interval { get; set; } = TimeSpan.FromDays(1);
+
+    /// <summary>
+    /// How often Jellyfin's ratings are checked and any that differ are pushed again, e.g. after Jellyfin overwrites them.
+    /// </summary>
+    public TimeSpan JellyfinInterval { get; set; } = TimeSpan.FromHours(1);
 
     /// <summary>
     /// How old a film's ratings can be before they are refreshed.

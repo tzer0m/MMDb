@@ -9,7 +9,7 @@ using MMDb.Options;
 namespace MMDb.Services;
 
 /// <summary>
-/// On a schedule, refreshes films' external ratings oldest first, then re-pushes any of my ratings missing or changed in Jellyfin.
+/// On a schedule, refreshes films' external ratings oldest first and syncs the library list, and more often pushes any of my ratings or MMDb's community ratings that are missing or different in Jellyfin.
 /// </summary>
 /// <param name="scopeFactory">Creates a scope for each run.</param>
 /// <param name="options">The refresh options.</param>
@@ -17,10 +17,19 @@ namespace MMDb.Services;
 public partial class RatingsRefreshService(IServiceScopeFactory scopeFactory, IOptions<RatingsRefreshOptions> options, ILogger<RatingsRefreshService> logger) : BackgroundService
 {
     /// <summary>
-    /// Runs the refresh and Jellyfin check at startup and then on every interval until the app stops.
+    /// Runs the daily refresh and the more frequent Jellyfin check side by side, each at startup and then on its own interval until the app stops.
     /// </summary>
     /// <param name="stoppingToken">Signals that the app is stopping.</param>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        await Task.WhenAll(RunRefreshAsync(stoppingToken), RunJellyfinAsync(stoppingToken));
+    }
+
+    /// <summary>
+    /// Refreshes external ratings and syncs the library list at startup and then on every interval.
+    /// </summary>
+    /// <param name="stoppingToken">Signals that the app is stopping.</param>
+    private async Task RunRefreshAsync(CancellationToken stoppingToken)
     {
         using PeriodicTimer timer = new(options.Value.Interval);
         do
@@ -35,19 +44,32 @@ public partial class RatingsRefreshService(IServiceScopeFactory scopeFactory, IO
             }
             try
             {
-                await RepushJellyfinAsync(stoppingToken);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                LogRepushFailed(logger, ex);
-            }
-            try
-            {
                 await SyncLibraryAsync(stoppingToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 LogLibrarySyncFailed(logger, ex);
+            }
+        }
+        while (await timer.WaitForNextTickAsync(stoppingToken));
+    }
+
+    /// <summary>
+    /// Pushes any ratings missing or different in Jellyfin at startup and then on every Jellyfin interval, so anything Jellyfin overwrites is put back soon after.
+    /// </summary>
+    /// <param name="stoppingToken">Signals that the app is stopping.</param>
+    private async Task RunJellyfinAsync(CancellationToken stoppingToken)
+    {
+        using PeriodicTimer timer = new(options.Value.JellyfinInterval);
+        do
+        {
+            try
+            {
+                await RepushJellyfinAsync(stoppingToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                LogRepushFailed(logger, ex);
             }
         }
         while (await timer.WaitForNextTickAsync(stoppingToken));
@@ -113,7 +135,7 @@ public partial class RatingsRefreshService(IServiceScopeFactory scopeFactory, IO
     }
 
     /// <summary>
-    /// Sets the critics rating in Jellyfin to my rating for every film where it is missing or different.
+    /// Sets each Jellyfin film's critics rating to my rating and its community rating to MMDb's community rating where they are missing or different, including unrated films in the library, which only get the community rating.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
     private async Task RepushJellyfinAsync(CancellationToken cancellationToken)
@@ -124,6 +146,9 @@ public partial class RatingsRefreshService(IServiceScopeFactory scopeFactory, IO
         List<Film> films = await db.Films.AsNoTracking().Include(x => x.FilmScore).ToListAsync(cancellationToken);
         Dictionary<string, Film> byIMDbId = films.Where(x => x.IMDbId is not null).GroupBy(x => x.IMDbId!, StringComparer.OrdinalIgnoreCase).ToDictionary(x => x.Key, x => x.First(), StringComparer.OrdinalIgnoreCase);
         Dictionary<int, Film> byTMDbId = films.Where(x => x.TMDbId is not null).GroupBy(x => x.TMDbId!.Value).ToDictionary(x => x.Key, x => x.First());
+        Dictionary<int, LibraryFilm> library = await db.LibraryFilms.AsNoTracking().ToDictionaryAsync(x => x.TMDbId, cancellationToken);
+        List<string> libraryIMDbIds = [.. library.Values.Select(x => x.IMDbId).OfType<string>()];
+        Dictionary<string, OMDbCacheEntry> omdb = await db.OMDbCache.AsNoTracking().Where(x => libraryIMDbIds.Contains(x.IMDbId)).ToDictionaryAsync(x => x.IMDbId, StringComparer.OrdinalIgnoreCase, cancellationToken);
         List<JellyfinItem> items = await jellyfin.GetMoviesAsync(cancellationToken);
         int repushed = 0;
         foreach (JellyfinItem item in items)
@@ -137,15 +162,31 @@ public partial class RatingsRefreshService(IServiceScopeFactory scopeFactory, IO
             {
                 byTMDbId.TryGetValue(tmdbId, out film);
             }
-            // Jellyfin stores the rating as a float, so a difference smaller than the one decimal place shown counts as the same.
-            if (film?.CriticRating is not double criticRating || item.CriticRating is double current && Math.Abs(current - criticRating) < 0.05)
+            // Unrated films come from the library list, with their cached ratings, so they still get MMDb's community rating.
+            if (film is null && item.TMDbId is int libraryTMDbId && library.TryGetValue(libraryTMDbId, out LibraryFilm? libraryFilm))
+            {
+                film = libraryFilm.ToFilm(libraryFilm.IMDbId is string libraryIMDbId ? omdb.GetValueOrDefault(libraryIMDbId) : null);
+            }
+            double? critic = film?.CriticRating is double criticRating && !Matches(item.CriticRating, criticRating) ? criticRating : null;
+            double? community = film?.CommunityRating is double communityRating && !Matches(item.CommunityRating, communityRating) ? communityRating : null;
+            if (critic is null && community is null)
             {
                 continue;
             }
-            await jellyfin.SetCriticRatingAsync(item.Id, criticRating, cancellationToken);
+            await jellyfin.SetRatingsAsync(item.Id, critic, community, cancellationToken);
             repushed++;
         }
         LogRepushed(logger, repushed);
+    }
+
+    /// <summary>
+    /// Returns whether Jellyfin already has a rating; it stores ratings as floats, so a difference smaller than the one decimal place shown counts as the same.
+    /// </summary>
+    /// <param name="current">The rating in Jellyfin, if any.</param>
+    /// <param name="rating">The rating it should have.</param>
+    private static bool Matches(double? current, double rating)
+    {
+        return current is double value && Math.Abs(value - rating) < 0.05;
     }
 
     /// <summary>

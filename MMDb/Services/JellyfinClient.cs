@@ -75,13 +75,13 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options, 
     }
 
     /// <summary>
-    /// Pushes a film's critics rating out of 10 to Jellyfin, returning false if the film isn't in the library; a film with no rating yet has nothing to push.
+    /// Pushes a film's ratings to Jellyfin, my rating as the critics rating and MMDb's community rating as the community rating, returning false if the film isn't in the library; ratings it doesn't have yet are left alone.
     /// </summary>
-    /// <param name="film">The film whose rating to push, with its score loaded.</param>
+    /// <param name="film">The film whose ratings to push, with its score loaded.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<bool> PushRatingAsync(Film film, CancellationToken cancellationToken = default)
     {
-        if (film.CriticRating is not double criticRating)
+        if (film.CriticRating is null && film.CommunityRating is null)
         {
             return true;
         }
@@ -90,23 +90,31 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options, 
         {
             return false;
         }
-        await SetCriticRatingAsync(item.Id, criticRating, cancellationToken);
+        await SetRatingsAsync(item.Id, film.CriticRating, film.CommunityRating, cancellationToken);
         return true;
     }
 
     /// <summary>
-    /// Sets a movie's critics rating, leaving all other metadata unchanged.
+    /// Sets a movie's critics and community ratings, leaving any that are null and all other metadata unchanged.
     /// </summary>
     /// <param name="itemId">The Jellyfin item ID.</param>
-    /// <param name="rating">The rating, out of 10.</param>
+    /// <param name="criticRating">The critics rating out of 10, or null to leave it.</param>
+    /// <param name="communityRating">The community rating out of 10, or null to leave it.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task SetCriticRatingAsync(string itemId, double rating, CancellationToken cancellationToken = default)
+    public async Task SetRatingsAsync(string itemId, double? criticRating, double? communityRating, CancellationToken cancellationToken = default)
     {
         using HttpRequestMessage getRequest = CreateRequest(HttpMethod.Get, $"Items/{itemId}?userId={options.Value.UserId}");
         using HttpResponseMessage getResponse = await http.SendAsync(getRequest, cancellationToken);
         getResponse.EnsureSuccessStatusCode();
         JsonObject item = await getResponse.Content.ReadFromJsonAsync<JsonObject>(cancellationToken) ?? throw new InvalidOperationException($"Jellyfin returned no metadata for item {itemId}.");
-        item["CriticRating"] = rating;
+        if (criticRating is double critic)
+        {
+            item["CriticRating"] = critic;
+        }
+        if (communityRating is double community)
+        {
+            item["CommunityRating"] = community;
+        }
         using HttpRequestMessage postRequest = CreateRequest(HttpMethod.Post, $"Items/{itemId}");
         postRequest.Content = JsonContent.Create(item);
         using HttpResponseMessage postResponse = await http.SendAsync(postRequest, cancellationToken);

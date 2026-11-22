@@ -21,9 +21,14 @@ public class JellyfinItem
     public int? ProductionYear { get; set; }
 
     /// <summary>
-    /// The critics rating, which holds my rating.
+    /// The critics rating, which holds my rating out of 10.
     /// </summary>
     public double? CriticRating { get; set; }
+
+    /// <summary>
+    /// The community rating, which holds MMDb's community rating out of 10.
+    /// </summary>
+    public double? CommunityRating { get; set; }
 
     /// <summary>
     /// External IDs keyed by provider, e.g. Imdb and Tmdb.
