@@ -78,7 +78,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         }
         Film film = await db.Films.AsNoTracking().FirstAsync(x => x.FilmId == filmId, cancellationToken);
         List<FilmComparison> answers = await db.FilmComparisons.AsNoTracking().Where(x => x.FilmId == filmId && x.CreatedAt >= score.ResetAt).OrderBy(x => x.CreatedAt).ThenBy(x => x.FilmComparisonId).ToListAsync(cancellationToken);
-        RankingState state = RankingState.Build(score, answers, scores);
+        RankingState state = RankingState.Build(score, answers, scores, options.Value.ClashTolerance);
         int needed = score.IsAnchor ? 0 : options.Value.MinComparisons;
         RankingQuestion question = new() { Film = film, Comparisons = state.Comparisons, ComparisonsNeeded = needed, IsAnchor = score.IsAnchor };
         if (state.IsContradiction)

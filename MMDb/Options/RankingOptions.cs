@@ -16,6 +16,11 @@ public class RankingOptions
     public double SettledRange { get; set; } = 3;
 
     /// <summary>
+    /// How close, in shown points, two films must be for answers that clash between them to be ignored rather than knocking them back.
+    /// </summary>
+    public double ClashTolerance { get; set; } = 3;
+
+    /// <summary>
     /// How many bands from its original rating a film must be heading before the move is double-checked.
     /// </summary>
     public int BigMoveBands { get; set; } = 2;

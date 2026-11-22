@@ -56,12 +56,13 @@ public class RankingState
     public bool IsContradiction => Lower >= Upper;
 
     /// <summary>
-    /// Works out the state from a film's answers in order; similar counts as better, except straight after another similar, when it counts as worse so the film goes between the two.
+    /// Works out the state from a film's answers in order. Similar only narrows the range when the other film is inside it: the first time it counts as better, and straight after another similar it counts as worse, so the film goes between the two. An answer that only clashes with a film within the clash tolerance of it is left out, since that's noise between near-identical films rather than a real contradiction.
     /// </summary>
     /// <param name="score">The film's score.</param>
     /// <param name="answers">Its answers since the placement started, oldest first.</param>
     /// <param name="scores">Every film's score, keyed by film ID.</param>
-    public static RankingState Build(FilmScore score, List<FilmComparison> answers, Dictionary<int, FilmScore> scores)
+    /// <param name="clashTolerance">How close, in shown points, two films must be for a clash between them to be ignored.</param>
+    public static RankingState Build(FilmScore score, List<FilmComparison> answers, Dictionary<int, FilmScore> scores, double clashTolerance)
     {
         RankingState state = score.IsAnchor ? new RankingState { Lower = (score.Band - 1) * 10, Upper = score.Band * 10 } : new RankingState { Lower = 0, Upper = 100 };
         bool previousSimilar = false;
@@ -76,19 +77,37 @@ public class RankingState
             }
             state.Comparisons++;
             state.Checks += answer.IsCheck ? 1 : 0;
-            bool above = answer.Result == ComparisonResult.Better || answer.Result == ComparisonResult.Similar && !previousSimilar;
-            if (above && other.Score > state.Lower)
+            bool similar = answer.Result == ComparisonResult.Similar;
+            bool inside = other.Score > state.Lower && other.Score < state.Upper;
+            if (similar && inside && !previousSimilar || answer.Result == ComparisonResult.Better && other.Score > state.Lower && !IsMinorClash(other, other.Score >= state.Upper ? state.UpperFilmId : null, scores, clashTolerance))
             {
                 state.Lower = other.Score;
                 state.LowerFilmId = other.FilmId;
             }
-            else if (!above && other.Score < state.Upper)
+            else if (similar && inside && previousSimilar || answer.Result == ComparisonResult.Worse && other.Score < state.Upper && !IsMinorClash(other, other.Score <= state.Lower ? state.LowerFilmId : null, scores, clashTolerance))
             {
                 state.Upper = other.Score;
                 state.UpperFilmId = other.FilmId;
             }
-            previousSimilar = answer.Result == ComparisonResult.Similar;
+            previousSimilar = similar;
         }
         return state;
+    }
+
+    /// <summary>
+    /// Returns whether an answer about one film would only clash with the film setting the opposite bound by a small amount: both shown scores, or raw scores where a film has none, within the tolerance.
+    /// </summary>
+    /// <param name="other">The film the answer was about.</param>
+    /// <param name="clashingFilmId">The film setting the bound it would cross, or null if it wouldn't cross one.</param>
+    /// <param name="scores">Every film's score, keyed by film ID.</param>
+    /// <param name="clashTolerance">How close, in shown points, two films must be for a clash between them to be ignored.</param>
+    private static bool IsMinorClash(FilmScore other, int? clashingFilmId, Dictionary<int, FilmScore> scores, double clashTolerance)
+    {
+        if (clashingFilmId is not int filmId || !scores.TryGetValue(filmId, out FilmScore? clashing))
+        {
+            return false;
+        }
+        double gap = other.DisplayScore is double otherShown && clashing.DisplayScore is double clashingShown ? otherShown - clashingShown : other.Score - clashing.Score;
+        return Math.Abs(gap) <= clashTolerance;
     }
 }
