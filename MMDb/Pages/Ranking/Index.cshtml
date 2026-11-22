@@ -6,10 +6,7 @@
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
     <h1 class="h4 mb-0">Ranking</h1>
-    <div class="d-flex align-items-center gap-3">
-        <span class="text-muted small">@Model.Settled of @Model.Total settled</span>
-        <a asp-page="/Ranking/Anchors" class="btn btn-sm btn-outline-secondary">Anchors</a>
-    </div>
+    <span class="text-muted small">@Model.Settled of @Model.Total settled</span>
 </div>
 
 @foreach (string message in Model.Messages)
@@ -20,23 +17,12 @@
 @if (Model.Question is RankingQuestion question && question.Opponent is Film opponent)
 {
     <div class="d-flex justify-content-end text-muted small mb-2">
-        <span>
-            @if (question.IsAnchor)
-            {
-                <text>Anchor &middot; </text>
-            }
-            @if (question.IsCheck)
-            {
-                <text>Double-checking a big move &middot; </text>
-            }
-            @question.Comparisons of @question.ComparisonsNeeded answers
-        </span>
+        <span>@question.Comparisons of @question.ComparisonsNeeded answers</span>
     </div>
     <p class="fs-5 text-center mb-3">Which is better?</p>
     <form method="post" asp-page-handler="Answer" id="rank-answer">
         <input type="hidden" name="filmId" value="@question.Film.FilmId" />
         <input type="hidden" name="otherFilmId" value="@opponent.FilmId" />
-        <input type="hidden" name="isCheck" value="@(question.IsCheck ? "true" : "false")" />
         <div class="row g-3 text-center mb-3">
             @{ await FilmChoice(question.Film, "Better", "rank-left", "\u2190"); }
             @{ await FilmChoice(opponent, "Worse", "rank-right", "\u2192"); }
@@ -57,7 +43,6 @@ else if (Model.Settled == 0)
 {
     <div class="text-center py-5">
         <p class="fs-5">Nothing is settled yet, so there's nothing to compare films with.</p>
-        <a asp-page="/Ranking/Anchors" class="btn btn-secondary btn-lg">Pick Anchors</a>
     </div>
 }
 else if (Model.Settled == Model.Total)

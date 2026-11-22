@@ -18,12 +18,12 @@ public class FilmScore
     public Film Film { get; set; } = null!;
 
     /// <summary>
-    /// The raw score, from just above 0 to 100, which only orders films for ranking; seeded from the original rating until comparisons settle it.
+    /// The raw score, from just above 0 to 100, which only orders films for ranking.
     /// </summary>
     public double Score { get; set; }
 
     /// <summary>
-    /// The score that is shown, from the film's position among settled films spread to match the shape of the original ratings; null until settled.
+    /// The score that is shown, from 0 to 100; it stays fixed once set, and a newly settled film gets the midpoint of the films either side of it; null until settled.
     /// </summary>
     public double? DisplayScore { get; set; }
 
@@ -31,11 +31,6 @@ public class FilmScore
     /// Whether enough comparisons have pinned the score down for it to be shown and compared against.
     /// </summary>
     public bool IsSettled { get; set; }
-
-    /// <summary>
-    /// Whether the film is an anchor I picked to bootstrap its band.
-    /// </summary>
-    public bool IsAnchor { get; set; }
 
     /// <summary>
     /// The film this one shares its score with, e.g. another cut of the same film; linked films are never ranked themselves.
@@ -69,26 +64,11 @@ public class FilmScore
     public int? ShownScore => DisplayScore is double displayScore ? DisplayFor(displayScore) : null;
 
     /// <summary>
-    /// The 1 to 10 band the raw score falls in, which is where ranking starts looking for comparisons.
-    /// </summary>
-    [NotMapped]
-    public int Band => BandFor(Score);
-
-    /// <summary>
     /// Returns a score as the whole number from 1 to 100 that is shown.
     /// </summary>
     /// <param name="score">The score.</param>
     public static int DisplayFor(double score)
     {
         return (int)Math.Clamp(Math.Round(score, MidpointRounding.AwayFromZero), 1, 100);
-    }
-
-    /// <summary>
-    /// Returns the 1 to 10 band a score falls in, matching the original rating scale.
-    /// </summary>
-    /// <param name="score">The score.</param>
-    public static int BandFor(double score)
-    {
-        return (DisplayFor(score) + 9) / 10;
     }
 }

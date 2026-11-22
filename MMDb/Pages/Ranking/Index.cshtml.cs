@@ -12,7 +12,8 @@ namespace MMDb.Pages.Ranking;
 /// </summary>
 /// <param name="db">The database context.</param>
 /// <param name="ranking">The ranking service.</param>
-public class IndexModel(MMDbContext db, RankingService ranking) : PageModel
+/// <param name="jellyfin">The Jellyfin client.</param>
+public class IndexModel(MMDbContext db, RankingService ranking, JellyfinClient jellyfin) : PageModel
 {
     /// <summary>
     /// How many films can settle or restart without needing a question before the page stops looking for one.
@@ -64,6 +65,10 @@ public class IndexModel(MMDbContext db, RankingService ranking) : PageModel
             {
                 Messages.Add(text);
             }
+            if (question?.IsSettled == true)
+            {
+                await PushToJellyfinAsync(id, cancellationToken);
+            }
             if (question?.Opponent is not null)
             {
                 Question = question;
@@ -81,11 +86,10 @@ public class IndexModel(MMDbContext db, RankingService ranking) : PageModel
     /// <param name="filmId">The film being ranked.</param>
     /// <param name="otherFilmId">The film it was compared with.</param>
     /// <param name="result">My answer.</param>
-    /// <param name="isCheck">Whether the question was double-checking a big move.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task<IActionResult> OnPostAnswerAsync(int filmId, int otherFilmId, ComparisonResult result, bool isCheck, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostAnswerAsync(int filmId, int otherFilmId, ComparisonResult result, CancellationToken cancellationToken)
     {
-        bool saved = await ranking.AnswerAsync(filmId, otherFilmId, result, isCheck, cancellationToken);
+        bool saved = await ranking.AnswerAsync(filmId, otherFilmId, result, cancellationToken);
         return RedirectToPage(new { filmId = saved ? filmId : (int?)null });
     }
 
@@ -101,5 +105,37 @@ public class IndexModel(MMDbContext db, RankingService ranking) : PageModel
             TempData["Message"] = "There's nothing to undo.";
         }
         return RedirectToPage(new { filmId });
+    }
+
+    /// <summary>
+    /// Sends a film back to be ranked again from scratch, then starts ranking it.
+    /// </summary>
+    /// <param name="filmId">The film to re-rank.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public async Task<IActionResult> OnPostRerankAsync(int filmId, CancellationToken cancellationToken)
+    {
+        int? rankId = await ranking.RerankAsync(filmId, cancellationToken);
+        return rankId is int id ? RedirectToPage(new { filmId = id }) : NotFound();
+    }
+
+    /// <summary>
+    /// Pushes a newly settled film's score to Jellyfin, noting any failure in the messages.
+    /// </summary>
+    /// <param name="filmId">The film that settled.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task PushToJellyfinAsync(int filmId, CancellationToken cancellationToken)
+    {
+        Film? film = await db.Films.AsNoTracking().Include(x => x.FilmScore).FirstOrDefaultAsync(x => x.FilmId == filmId, cancellationToken);
+        try
+        {
+            if (film is not null)
+            {
+                await jellyfin.PushRatingAsync(film, cancellationToken);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            Messages.Add($"Pushing the score to Jellyfin failed: {ex.Message}");
+        }
     }
 }

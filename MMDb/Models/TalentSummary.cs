@@ -36,7 +36,7 @@ public class TalentSummary
     /// <summary>
     /// My average rating across their films.
     /// </summary>
-    public double AverageMyRating { get; set; }
+    public double? AverageMyRating { get; set; }
 
     /// <summary>
     /// The average community rating across their films that have one.
@@ -51,7 +51,7 @@ public class TalentSummary
     /// <summary>
     /// My average rating minus the average community rating, if there is one.
     /// </summary>
-    public double? Delta => AverageCommunityRating is double communityRating ? Math.Round(AverageMyRating - communityRating, 1) : null;
+    public double? Delta => AverageCommunityRating is double communityRating && AverageMyRating is double myRating ? Math.Round(myRating - communityRating, 1) : null;
 
     /// <summary>
     /// Their films I have rated, used for filtering by title and year.
@@ -62,7 +62,7 @@ public class TalentSummary
     /// <summary>
     /// The background colour for my average rating.
     /// </summary>
-    public string MyRatingColour => RatingColour.ForRating(AverageMyRating);
+    public string? MyRatingColour => AverageMyRating is double myRating ? RatingColour.ForRating(myRating) : null;
 
     /// <summary>
     /// The background colour for the average community rating, if there is one.

@@ -41,16 +41,6 @@ public class RankingState
     public ComparisonResult? LastResult { get; set; }
 
     /// <summary>
-    /// How many answers to questions double-checking a big move count so far, leaving out skips.
-    /// </summary>
-    public int Checks { get; set; }
-
-    /// <summary>
-    /// Whether the most recent answer was to a question double-checking a big move.
-    /// </summary>
-    public bool LastWasCheck { get; set; }
-
-    /// <summary>
     /// Whether the answers contradict each other: it beat a film ranked above one it lost to.
     /// </summary>
     public bool IsContradiction => Lower >= Upper;
@@ -58,25 +48,22 @@ public class RankingState
     /// <summary>
     /// Works out the state from a film's answers in order. Similar only narrows the range when the other film is inside it: the first time it counts as better, and straight after another similar it counts as worse, so the film goes between the two. An answer that only clashes with a film within the clash tolerance of it is left out, since that's noise between near-identical films rather than a real contradiction.
     /// </summary>
-    /// <param name="score">The film's score.</param>
     /// <param name="answers">Its answers since the placement started, oldest first.</param>
     /// <param name="scores">Every film's score, keyed by film ID.</param>
     /// <param name="clashTolerance">How close, in shown points, two films must be for a clash between them to be ignored.</param>
-    public static RankingState Build(FilmScore score, List<FilmComparison> answers, Dictionary<int, FilmScore> scores, double clashTolerance)
+    public static RankingState Build(List<FilmComparison> answers, Dictionary<int, FilmScore> scores, double clashTolerance)
     {
-        RankingState state = score.IsAnchor ? new RankingState { Lower = (score.Band - 1) * 10, Upper = score.Band * 10 } : new RankingState { Lower = 0, Upper = 100 };
+        RankingState state = new() { Lower = 0, Upper = 100 };
         bool previousSimilar = false;
         foreach (FilmComparison answer in answers)
         {
             state.Asked.Add(answer.OtherFilmId);
             state.LastResult = answer.Result;
-            state.LastWasCheck = answer.IsCheck;
             if (answer.Result == ComparisonResult.Skipped || !scores.TryGetValue(answer.OtherFilmId, out FilmScore? other))
             {
                 continue;
             }
             state.Comparisons++;
-            state.Checks += answer.IsCheck ? 1 : 0;
             bool similar = answer.Result == ComparisonResult.Similar;
             bool inside = other.Score > state.Lower && other.Score < state.Upper;
             if (similar && inside && !previousSimilar || answer.Result == ComparisonResult.Better && other.Score > state.Lower && !IsMinorClash(other, other.Score >= state.Upper ? state.UpperFilmId : null, scores, clashTolerance))

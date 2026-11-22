@@ -21,16 +21,6 @@ public class RankingOptions
     public double ClashTolerance { get; set; } = 3;
 
     /// <summary>
-    /// How many bands from its original rating a film must be heading before the move is double-checked.
-    /// </summary>
-    public int BigMoveBands { get; set; } = 2;
-
-    /// <summary>
-    /// How many extra questions double-check a big move.
-    /// </summary>
-    public int BigMoveChecks { get; set; } = 2;
-
-    /// <summary>
     /// How many recent questions' films to avoid asking about again where there's an alternative.
     /// </summary>
     public int RecentOpponents { get; set; } = 20;

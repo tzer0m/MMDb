@@ -137,11 +137,11 @@ public partial class RatingsRefreshService(IServiceScopeFactory scopeFactory, IO
             {
                 byTMDbId.TryGetValue(tmdbId, out film);
             }
-            if (film is null || item.CriticRating == film.CriticRating)
+            if (film?.CriticRating is not int criticRating || item.CriticRating == criticRating)
             {
                 continue;
             }
-            await jellyfin.SetCriticRatingAsync(item.Id, film.CriticRating, cancellationToken);
+            await jellyfin.SetCriticRatingAsync(item.Id, criticRating, cancellationToken);
             repushed++;
         }
         LogRepushed(logger, repushed);

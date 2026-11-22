@@ -10,19 +10,12 @@
 {
     <form method="post" asp-route-query="@Model.Query" class="row g-3 mt-2" style="max-width: 32rem">
         <div class="col-sm-6">
-            <label asp-for="Input.Rating" class="form-label"></label>
-            <select asp-for="Input.Rating" asp-items="@(Enumerable.Range(1, 10).Select(x => new SelectListItem(x.ToString(), x.ToString())))" class="form-select">
-                <option value="">Choose&hellip;</option>
-            </select>
-            <span asp-validation-for="Input.Rating" class="text-danger small"></span>
-        </div>
-        <div class="col-sm-6">
             <label asp-for="Input.WatchedOn" class="form-label"></label>
             <input asp-for="Input.WatchedOn" class="form-control" />
             <span asp-validation-for="Input.WatchedOn" class="text-danger small"></span>
         </div>
         <div class="col-12 d-flex gap-2">
-            <button type="submit" class="btn btn-secondary">Add Film</button>
+            <button type="submit" class="btn btn-secondary">Rank</button>
             @if (!string.IsNullOrWhiteSpace(Model.Query))
             {
                 <a asp-page="/Films/Search" asp-route-query="@Model.Query" class="btn btn-outline-secondary">Back to Search</a>

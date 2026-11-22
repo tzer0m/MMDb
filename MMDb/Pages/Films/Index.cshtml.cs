@@ -90,7 +90,7 @@ public class IndexModel(MMDbContext db, PosterService posters) : PageModel
             "title" => x => x.Title,
             "year" => x => x.Year ?? int.MinValue,
             "director" => x => x.Director ?? string.Empty,
-            "rating" => x => x.FilmId == 0 ? 0 : x.MyRating,
+            "rating" => x => x.FilmId == 0 ? -2 : x.MyRating ?? -1,
             "communityRating" => x => x.CommunityRating ?? double.MinValue,
             "delta" => x => x.FilmId == 0 ? double.MinValue : x.RatingDelta ?? double.MinValue,
             _ => x => x.WatchedOn ?? DateOnly.MinValue
@@ -107,6 +107,6 @@ public class IndexModel(MMDbContext db, PosterService posters) : PageModel
         bool rated = film.FilmId != 0;
         string url = (rated ? Url.Page("/Films/Details", new { id = film.FilmId }) : Url.Page("/Films/Preview", new { tmdbId = film.TMDbId })) ?? string.Empty;
         string? posterUrl = await posters.UrlAsync(film.TMDbId, film.IMDbId, film.PosterPath, 92, cancellationToken);
-        return new FilmRow { Url = url, PosterUrl = posterUrl, Title = film.Title, Year = film.Year, Director = film.Director, Rating = rated ? film.MyRating : null, RatingText = rated ? film.MyRatingText : null, RatingTitle = rated ? film.MyRatingTitle : null, RatingColour = rated ? RatingColour.ForRating(film.MyRating) : null, CommunityRating = film.CommunityRating, CommunityRatingColour = film.CommunityRating is double communityRating ? RatingColour.ForRating(communityRating) : null, Delta = rated ? film.RatingDelta : null, WatchedOn = film.WatchedOn };
+        return new FilmRow { Url = url, PosterUrl = posterUrl, Title = film.Title, Year = film.Year, Director = film.Director, Rating = rated ? film.MyRating : null, RatingText = rated ? film.MyRatingText : null, RatingTitle = rated ? film.MyRatingTitle : null, RatingColour = rated && film.MyRating is double myRating ? RatingColour.ForRating(myRating) : null, CommunityRating = film.CommunityRating, CommunityRatingColour = film.CommunityRating is double communityRating ? RatingColour.ForRating(communityRating) : null, Delta = rated ? film.RatingDelta : null, WatchedOn = film.WatchedOn };
     }
 }

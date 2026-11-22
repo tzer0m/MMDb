@@ -43,7 +43,7 @@
                 <td class="text-truncate" style="max-width: 0; width: 100%" title="@film.Title"><a href="@href" class="stretched-link text-reset text-decoration-none">@film.Title</a></td>
                 <td>@film.Year</td>
                 <td class="d-none d-md-table-cell text-nowrap">@film.Director</td>
-                <td class="text-center" data-order="@film.MyRating"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.MyRating)" title="@film.MyRatingTitle">@film.MyRatingText</span></td>
+                <td class="text-center" data-order="@(film.MyRating ?? -1)"><span class="badge fs-5 text-black" style="@film.MyRatingStyle" title="@film.MyRatingTitle">@film.MyRatingText</span></td>
                 <td class="text-center" data-order="@(film.CommunityRating ?? -1)">
                     @if (film.CommunityRating is double communityRating)
                     {

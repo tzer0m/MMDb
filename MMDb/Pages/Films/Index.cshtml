@@ -105,7 +105,7 @@
                 { data: 'title', createdCell: (cell, title) => { cell.classList.add('text-truncate'); cell.style.cssText = 'max-width: 0; width: 100%'; cell.title = title; }, render: (title, type, film) => `<a href="${escapeHtml(film.url)}" class="stretched-link text-reset text-decoration-none">${escapeHtml(title)}</a>` },
                 { data: 'year', render: year => year ?? '' },
                 { data: 'director', className: 'd-none d-md-table-cell text-nowrap', render: director => director ? escapeHtml(director) : '' },
-                { data: 'rating', className: 'text-center', render: (rating, type, film) => rating == null ? '<span class="badge fs-5 bg-secondary text-body" title="Not Rated Yet">#</span>' : `<span class="badge fs-5 text-black" style="background-color: ${film.ratingColour}" title="${escapeHtml(film.ratingTitle)}">${film.ratingText}</span>` },
+                { data: 'rating', className: 'text-center', render: (rating, type, film) => film.ratingText == null ? '<span class="badge fs-5 bg-secondary text-body" title="Not Rated Yet">#</span>' : rating == null ? `<span class="badge fs-5 bg-secondary text-body" title="${escapeHtml(film.ratingTitle)}">${film.ratingText}</span>` : `<span class="badge fs-5 text-black" style="background-color: ${film.ratingColour}" title="${escapeHtml(film.ratingTitle)}">${film.ratingText}</span>` },
                 { data: 'communityRating', className: 'text-center', render: (rating, type, film) => ratingBadge(rating, film.communityRatingColour, 'fs-5') },
                 { data: 'delta', className: 'd-none d-md-table-cell text-center text-nowrap', render: formatDelta },
                 { data: 'watchedOn', className: 'd-none d-sm-table-cell text-nowrap', render: formatDate }

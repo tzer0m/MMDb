@@ -75,18 +75,22 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options, 
     }
 
     /// <summary>
-    /// Pushes a film's critics rating out of 100 to Jellyfin, returning false if the film isn't in the library.
+    /// Pushes a film's critics rating out of 100 to Jellyfin, returning false if the film isn't in the library; a film with no rating yet has nothing to push.
     /// </summary>
     /// <param name="film">The film whose rating to push, with its score loaded.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<bool> PushRatingAsync(Film film, CancellationToken cancellationToken = default)
     {
+        if (film.CriticRating is not int criticRating)
+        {
+            return true;
+        }
         JellyfinItem? item = await FindMovieAsync(film.IMDbId, film.TMDbId, cancellationToken);
         if (item is null)
         {
             return false;
         }
-        await SetCriticRatingAsync(item.Id, film.CriticRating, cancellationToken);
+        await SetCriticRatingAsync(item.Id, criticRating, cancellationToken);
         return true;
     }
 

@@ -59,7 +59,7 @@ namespace MMDb.Migrations
                     b.Property<string>("PosterPath")
                         .HasColumnType("text");
 
-                    b.Property<int>("Rating")
+                    b.Property<int?>("Rating")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("RatingsUpdatedAt")
@@ -123,9 +123,6 @@ namespace MMDb.Migrations
                     b.Property<int>("FilmId")
                         .HasColumnType("integer");
 
-                    b.Property<bool>("IsCheck")
-                        .HasColumnType("boolean");
-
                     b.Property<int>("OtherFilmId")
                         .HasColumnType("integer");
 
@@ -172,9 +169,6 @@ namespace MMDb.Migrations
 
                     b.Property<double?>("DisplayScore")
                         .HasColumnType("double precision");
-
-                    b.Property<bool>("IsAnchor")
-                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsSettled")
                         .HasColumnType("boolean");

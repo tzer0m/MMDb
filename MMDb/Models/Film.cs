@@ -94,9 +94,9 @@ public class Film
     public DateTime? RatingsUpdatedAt { get; set; }
 
     /// <summary>
-    /// My original rating, from 1 to 10, from before films were ranked by comparison.
+    /// My original rating, from 1 to 10, from before films were ranked by comparison; read-only, and null for films added since.
     /// </summary>
-    public int Rating { get; set; }
+    public int? Rating { get; set; }
 
     /// <summary>
     /// The date I watched the film.
@@ -133,7 +133,7 @@ public class Film
     /// My rating minus the community rating, both out of 10, using the original rating stretched onto the same scale until the score is settled: positive if I rate it higher, negative if the community does.
     /// </summary>
     [NotMapped]
-    public double? RatingDelta => CommunityRating is double communityRating ? Math.Round((MyScore ?? RatingScale.FromOneToTen(Rating)) - communityRating, 1) : null;
+    public double? RatingDelta => CommunityRating is double communityRating && (MyScore ?? (Rating is int rating ? (double?)RatingScale.FromOneToTen(rating) : null)) is double mine ? Math.Round(mine - communityRating, 1) : null;
 
     /// <summary>
     /// My score out of 10 to one decimal place, from the settled 1 to 100 score, or null until it is settled.
@@ -142,28 +142,34 @@ public class Film
     public double? MyScore => FilmScore?.ShownScore is int shown ? shown / 10.0 : null;
 
     /// <summary>
-    /// My rating as shown: the score out of 10 once settled, otherwise the original rating.
+    /// My rating as shown: the score out of 10 once settled, otherwise the original rating, or null if it has neither.
     /// </summary>
     [NotMapped]
-    public double MyRating => MyScore ?? Rating;
+    public double? MyRating => MyScore ?? Rating;
 
     /// <summary>
-    /// My rating formatted for display, with one decimal place once settled.
+    /// My rating formatted for display, with one decimal place once settled, or a dash if it has no rating yet.
     /// </summary>
     [NotMapped]
-    public string MyRatingText => MyScore is double score ? score.ToString("0.0") : Rating.ToString();
+    public string MyRatingText => MyScore is double score ? score.ToString("0.0") : Rating?.ToString() ?? "\u2013";
 
     /// <summary>
-    /// The tooltip for my rating, mentioning the original rating.
+    /// The tooltip for my rating, mentioning the original rating if there is one.
     /// </summary>
     [NotMapped]
-    public string MyRatingTitle => MyScore is null ? "My Rating (not ranked yet)" : $"My Rating (Originally {Rating})";
+    public string MyRatingTitle => MyScore is not null ? Rating is int rating ? $"My Rating (Originally {rating})" : "My Rating" : Rating is null ? "Not Ranked Yet" : "My Rating (not ranked yet)";
 
     /// <summary>
-    /// The critics rating pushed to Jellyfin, out of 100: the score once settled, otherwise the original rating times 10.
+    /// The inline style for my rating's badge: its colour, or grey if it has no rating yet.
     /// </summary>
     [NotMapped]
-    public int CriticRating => FilmScore?.ShownScore ?? Rating * 10;
+    public string MyRatingStyle => MyRating is double rating ? RatingColour.StyleForRating(rating) : "background-color: var(--bs-secondary-bg); color: var(--bs-body-color) !important";
+
+    /// <summary>
+    /// The critics rating pushed to Jellyfin, out of 100: the score once settled, otherwise the original rating times 10, or null if it has neither.
+    /// </summary>
+    [NotMapped]
+    public int? CriticRating => FilmScore?.ShownScore ?? Rating * 10;
 
     /// <summary>
     /// The runtime formatted as hours and minutes.

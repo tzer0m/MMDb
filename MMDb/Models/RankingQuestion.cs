@@ -26,14 +26,9 @@ public class RankingQuestion
     public int ComparisonsNeeded { get; set; }
 
     /// <summary>
-    /// Whether the film is an anchor.
+    /// Whether the film settled while getting this question.
     /// </summary>
-    public bool IsAnchor { get; set; }
-
-    /// <summary>
-    /// Whether this question double-checks a big move away from the film's original rating.
-    /// </summary>
-    public bool IsCheck { get; set; }
+    public bool IsSettled { get; set; }
 
     /// <summary>
     /// What happened when the placement finished, e.g. the score it settled at.

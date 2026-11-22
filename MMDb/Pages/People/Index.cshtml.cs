@@ -72,7 +72,7 @@ public class IndexModel(MMDbContext db, IOptions<PeopleOptions> options) : PageM
             "name" => x => x.Name,
             "roles" => x => x.Roles,
             "leads" => x => x.Leads,
-            "averageMyRating" => x => x.AverageMyRating,
+            "averageMyRating" => x => x.AverageMyRating ?? double.MinValue,
             "averageCommunityRating" => x => x.AverageCommunityRating ?? double.MinValue,
             "delta" => x => x.Delta ?? double.MinValue,
             _ => x => x.FilmCount
@@ -90,6 +90,6 @@ public class IndexModel(MMDbContext db, IOptions<PeopleOptions> options) : PageM
         List<double> communityRatings = [.. personFilms.Where(x => x.CommunityRating is not null).Select(x => x.CommunityRating!.Value)];
         Person person = credits.First().Person;
         int leads = credits.Where(x => x.Role == CreditRole.Cast && x.Order < options.Value.LeadCount).Select(x => x.FilmId).Distinct().Count();
-        return new TalentSummary { PersonId = person.PersonId, Name = person.Name, ProfilePath = person.ProfilePath, FilmCount = personFilms.Count, Roles = string.Join("/", credits.Select(x => x.Role).Distinct().Order().Select(x => x == CreditRole.Director ? "D" : "A")), AverageMyRating = Math.Round(personFilms.Average(x => x.MyRating), 1), AverageCommunityRating = communityRatings.Count == 0 ? null : Math.Round(communityRatings.Average(), 1), Leads = leads, Films = personFilms };
+        return new TalentSummary { PersonId = person.PersonId, Name = person.Name, ProfilePath = person.ProfilePath, FilmCount = personFilms.Count, Roles = string.Join("/", credits.Select(x => x.Role).Distinct().Order().Select(x => x == CreditRole.Director ? "D" : "A")), AverageMyRating = personFilms.Average(x => x.MyRating) is double average ? Math.Round(average, 1) : null, AverageCommunityRating = communityRatings.Count == 0 ? null : Math.Round(communityRatings.Average(), 1), Leads = leads, Films = personFilms };
     }
 }

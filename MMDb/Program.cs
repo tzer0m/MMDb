@@ -78,14 +78,12 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Ranking");
 });
 
-// Build the app, apply any pending migrations, give any new films a provisional score and work out the shown scores.
+// Build the app, apply any pending migrations and give any new films an unsettled score.
 WebApplication app = builder.Build();
 using (IServiceScope scope = app.Services.CreateScope())
 {
     scope.ServiceProvider.GetRequiredService<MMDbContext>().Database.Migrate();
-    RankingService ranking = scope.ServiceProvider.GetRequiredService<RankingService>();
-    await ranking.EnsureScoresAsync();
-    await ranking.RespaceAsync();
+    await scope.ServiceProvider.GetRequiredService<RankingService>().EnsureScoresAsync();
 }
 
 // Configure the request pipeline and run.

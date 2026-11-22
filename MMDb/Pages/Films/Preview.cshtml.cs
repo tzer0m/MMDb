@@ -75,7 +75,7 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, OMDb
     }
 
     /// <summary>
-    /// Saves the film with my rating, pushes the rating to Jellyfin, then redirects to the new film page.
+    /// Saves the film, then goes straight to ranking it.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
@@ -108,8 +108,7 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, OMDb
         Input.ApplyTo(film);
         db.Films.Add(film);
         await db.SaveChangesAsync(cancellationToken);
-        TempData["Message"] = await PushToJellyfinAsync(film, cancellationToken);
-        return RedirectToPage("/Films/Details", new { id = film.FilmId });
+        return RedirectToPage("/Ranking/Index", new { filmId = film.FilmId });
     }
 
     /// <summary>
@@ -170,24 +169,6 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, OMDb
     }
 
     /// <summary>
-    /// Pushes the rating to Jellyfin and returns a message describing the outcome.
-    /// </summary>
-    /// <param name="film">The film whose rating to push.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task<string?> PushToJellyfinAsync(Film film, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await jellyfin.PushRatingAsync(film, cancellationToken) ? null : "Saved. This film isn't in Jellyfin, so no rating was pushed.";
-        }
-        catch (HttpRequestException ex)
-        {
-            LogPushFailed(logger, ex, film.Title);
-            return $"Saved, but pushing the rating to Jellyfin failed: {ex.Message}";
-        }
-    }
-
-    /// <summary>
     /// Logs that OMDb ratings could not be fetched for a previewed film.
     /// </summary>
     /// <param name="logger">The logger.</param>
@@ -195,13 +176,4 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, OMDb
     /// <param name="title">The film title.</param>
     [LoggerMessage(Level = LogLevel.Warning, Message = "Could not fetch OMDb ratings for {Title}; using cached ratings, and the refresh job will retry once it is added.")]
     private static partial void LogRatingsFailed(ILogger logger, Exception exception, string title);
-
-    /// <summary>
-    /// Logs that a rating could not be pushed to Jellyfin.
-    /// </summary>
-    /// <param name="logger">The logger.</param>
-    /// <param name="exception">The error.</param>
-    /// <param name="title">The film title.</param>
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Could not push the rating for {Title} to Jellyfin.")]
-    private static partial void LogPushFailed(ILogger logger, Exception exception, string title);
 }

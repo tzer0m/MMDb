@@ -94,7 +94,7 @@
                     </div>
                     <div class="d-flex d-md-none align-items-center gap-2 mt-1">
                         <span class="text-truncate text-muted small" title="@Model.Roles[film.FilmId]">@(film.Year is int year ? $"{year} \u00b7 " : "")@(billing is int mobileBilling ? $"#{mobileBilling} \u00b7 " : "")@Model.Roles[film.FilmId]</span>
-                        <span class="badge text-black ms-auto" style="@RatingColour.StyleForRating(film.MyRating)" title="@film.MyRatingTitle">@film.MyRatingText</span>
+                        <span class="badge text-black ms-auto" style="@film.MyRatingStyle" title="@film.MyRatingTitle">@film.MyRatingText</span>
                         @if (film.CommunityRating is double mobileCommunityRating)
                         {
                             <span class="badge text-black" style="@RatingColour.StyleForRating(mobileCommunityRating)" title="Community Rating">@mobileCommunityRating.ToString("0.0")</span>
@@ -104,7 +104,7 @@
                 <td class="d-none d-md-table-cell">@film.Year</td>
                 <td class="d-none d-md-table-cell text-truncate" style="max-width: 16rem" title="@Model.Roles[film.FilmId]">@Model.Roles[film.FilmId]</td>
                 <td class="d-none d-md-table-cell text-center">@billing</td>
-                <td class="d-none d-md-table-cell text-center"><span class="badge fs-5 text-black" style="@RatingColour.StyleForRating(film.MyRating)" title="@film.MyRatingTitle">@film.MyRatingText</span></td>
+                <td class="d-none d-md-table-cell text-center"><span class="badge fs-5 text-black" style="@film.MyRatingStyle" title="@film.MyRatingTitle">@film.MyRatingText</span></td>
                 <td class="d-none d-md-table-cell text-center">
                     @if (film.CommunityRating is double communityRating)
                     {
