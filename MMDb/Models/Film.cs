@@ -166,10 +166,10 @@ public class Film
     public string MyRatingStyle => MyRating is double rating ? RatingColour.StyleForRating(rating) : "background-color: var(--bs-secondary-bg); color: var(--bs-body-color) !important";
 
     /// <summary>
-    /// The critics rating pushed to Jellyfin, out of 100: the score once settled, otherwise the original rating times 10, or null if it has neither.
+    /// The critics rating pushed to Jellyfin, out of 10 to match Jellyfin's community rating: my rating as shown, or null if it has none.
     /// </summary>
     [NotMapped]
-    public int? CriticRating => FilmScore?.ShownScore ?? Rating * 10;
+    public double? CriticRating => MyRating;
 
     /// <summary>
     /// The runtime formatted as hours and minutes.

@@ -137,7 +137,8 @@ public partial class RatingsRefreshService(IServiceScopeFactory scopeFactory, IO
             {
                 byTMDbId.TryGetValue(tmdbId, out film);
             }
-            if (film?.CriticRating is not int criticRating || item.CriticRating == criticRating)
+            // Jellyfin stores the rating as a float, so a difference smaller than the one decimal place shown counts as the same.
+            if (film?.CriticRating is not double criticRating || item.CriticRating is double current && Math.Abs(current - criticRating) < 0.05)
             {
                 continue;
             }

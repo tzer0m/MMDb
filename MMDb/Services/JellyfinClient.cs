@@ -75,13 +75,13 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options, 
     }
 
     /// <summary>
-    /// Pushes a film's critics rating out of 100 to Jellyfin, returning false if the film isn't in the library; a film with no rating yet has nothing to push.
+    /// Pushes a film's critics rating out of 10 to Jellyfin, returning false if the film isn't in the library; a film with no rating yet has nothing to push.
     /// </summary>
     /// <param name="film">The film whose rating to push, with its score loaded.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     public async Task<bool> PushRatingAsync(Film film, CancellationToken cancellationToken = default)
     {
-        if (film.CriticRating is not int criticRating)
+        if (film.CriticRating is not double criticRating)
         {
             return true;
         }
@@ -98,9 +98,9 @@ public class JellyfinClient(HttpClient http, IOptions<JellyfinOptions> options, 
     /// Sets a movie's critics rating, leaving all other metadata unchanged.
     /// </summary>
     /// <param name="itemId">The Jellyfin item ID.</param>
-    /// <param name="rating">The rating, out of 100.</param>
+    /// <param name="rating">The rating, out of 10.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task SetCriticRatingAsync(string itemId, int rating, CancellationToken cancellationToken = default)
+    public async Task SetCriticRatingAsync(string itemId, double rating, CancellationToken cancellationToken = default)
     {
         using HttpRequestMessage getRequest = CreateRequest(HttpMethod.Get, $"Items/{itemId}?userId={options.Value.UserId}");
         using HttpResponseMessage getResponse = await http.SendAsync(getRequest, cancellationToken);
