@@ -81,10 +81,11 @@ public class IndexModel(MMDbContext db, RankingService ranking) : PageModel
     /// <param name="filmId">The film being ranked.</param>
     /// <param name="otherFilmId">The film it was compared with.</param>
     /// <param name="result">My answer.</param>
+    /// <param name="isCheck">Whether the question was double-checking a big move.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task<IActionResult> OnPostAnswerAsync(int filmId, int otherFilmId, ComparisonResult result, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostAnswerAsync(int filmId, int otherFilmId, ComparisonResult result, bool isCheck, CancellationToken cancellationToken)
     {
-        bool saved = await ranking.AnswerAsync(filmId, otherFilmId, result, cancellationToken);
+        bool saved = await ranking.AnswerAsync(filmId, otherFilmId, result, isCheck, cancellationToken);
         return RedirectToPage(new { filmId = saved ? filmId : (int?)null });
     }
 

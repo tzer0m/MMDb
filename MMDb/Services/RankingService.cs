@@ -83,16 +83,24 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         RankingQuestion question = new() { Film = film, Comparisons = state.Comparisons, ComparisonsNeeded = needed, IsAnchor = score.IsAnchor };
         if (state.IsContradiction)
         {
-            question.Message = await RestartAsync(score, state, scores, film, cancellationToken);
+            // A failed double-check means this film's own answers were off, so only it starts again.
+            question.Message = await RestartAsync(score, state, scores, film, !state.LastWasCheck, cancellationToken);
             return question;
         }
         // Only settled films are compared against, so mistakes in unsettled ones don't spread; linked films would just repeat their main film.
-        List<FilmScore> candidates = [.. scores.Values.Where(x => x.IsSettled && x.LinkedToFilmId is null && x.FilmId != filmId && x.Score > state.Lower && x.Score < state.Upper && !state.Asked.Contains(x.FilmId)).OrderBy(x => x.Score)];
+        List<FilmScore> pool = [.. scores.Values.Where(x => x.IsSettled && x.LinkedToFilmId is null && x.FilmId != filmId && !state.Asked.Contains(x.FilmId))];
+        List<FilmScore> candidates = [.. pool.Where(x => x.Score > state.Lower && x.Score < state.Upper).OrderBy(x => x.Score)];
         bool enoughAnswers = state.Comparisons >= needed;
         if (candidates.Count == 0 || enoughAnswers && state.Upper - state.Lower <= options.Value.SettledRange)
         {
             // With too few answers and nothing left inside the range, check against the nearest films just outside it instead.
-            FilmScore? check = candidates.Count == 0 && !enoughAnswers ? scores.Values.Where(x => x.IsSettled && x.LinkedToFilmId is null && x.FilmId != filmId && !state.Asked.Contains(x.FilmId)).OrderBy(x => x.Score <= state.Lower ? state.Lower - x.Score : x.Score - state.Upper).FirstOrDefault() : null;
+            FilmScore? check = candidates.Count == 0 && !enoughAnswers ? pool.OrderBy(x => x.Score <= state.Lower ? state.Lower - x.Score : x.Score - state.Upper).FirstOrDefault() : null;
+            // A film about to settle far from its original rating is first asked about films it jumped past, to catch a hasty answer.
+            if (check is null && !score.IsAnchor && state.Checks < options.Value.BigMoveChecks)
+            {
+                check = PickBigMoveCheck(film, state, pool);
+                question.IsCheck = check is not null;
+            }
             if (check is null)
             {
                 question.Message = await SettleAsync(score, state, film, cancellationToken);
@@ -101,7 +109,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
             candidates = [check];
         }
         // After a similar answer, ask about the next film up to decide which side it belongs; otherwise search outwards from its band.
-        FilmScore pick = state.LastResult == ComparisonResult.Similar ? candidates[0] : PickFromBand(candidates, score.Band);
+        FilmScore pick = candidates.Count == 1 || state.LastResult == ComparisonResult.Similar ? candidates[0] : PickFromBand(candidates, score.Band, await GetRecentOpponentsAsync(cancellationToken));
         question.Opponent = await db.Films.AsNoTracking().FirstAsync(x => x.FilmId == pick.FilmId, cancellationToken);
         return question;
     }
@@ -112,14 +120,15 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
     /// <param name="filmId">The film being ranked.</param>
     /// <param name="otherFilmId">The film it was compared with.</param>
     /// <param name="result">My answer.</param>
+    /// <param name="isCheck">Whether the question was double-checking a big move.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task<bool> AnswerAsync(int filmId, int otherFilmId, ComparisonResult result, CancellationToken cancellationToken = default)
+    public async Task<bool> AnswerAsync(int filmId, int otherFilmId, ComparisonResult result, bool isCheck, CancellationToken cancellationToken = default)
     {
         if (filmId == otherFilmId || !await db.FilmScores.AnyAsync(x => x.FilmId == filmId && !x.IsSettled && x.LinkedToFilmId == null, cancellationToken) || !await db.Films.AnyAsync(x => x.FilmId == otherFilmId, cancellationToken))
         {
             return false;
         }
-        db.FilmComparisons.Add(new FilmComparison { FilmId = filmId, OtherFilmId = otherFilmId, Result = result, CreatedAt = DateTime.UtcNow });
+        db.FilmComparisons.Add(new FilmComparison { FilmId = filmId, OtherFilmId = otherFilmId, Result = result, IsCheck = isCheck, CreatedAt = DateTime.UtcNow });
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -243,11 +252,12 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
     }
 
     /// <summary>
-    /// Picks the middle candidate within the film's band, widening by a band each side until there are candidates, so the search starts where its original rating suggests.
+    /// Picks a random candidate from the middle third of those within the film's band, widening by a band each side until there are candidates, so the search starts where its original rating suggests and still roughly halves the range each time.
     /// </summary>
     /// <param name="candidates">The candidates, lowest score first; there is at least one.</param>
     /// <param name="band">The film's band.</param>
-    private static FilmScore PickFromBand(List<FilmScore> candidates, int band)
+    /// <param name="recent">Films asked about recently, avoided where there's an alternative.</param>
+    private static FilmScore PickFromBand(List<FilmScore> candidates, int band, HashSet<int> recent)
     {
         for (int widen = 0; ; widen++)
         {
@@ -256,9 +266,47 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
             List<FilmScore> inWindow = [.. candidates.Where(x => x.Score >= low && x.Score <= high)];
             if (inWindow.Count > 0)
             {
-                return inWindow[inWindow.Count / 2];
+                List<FilmScore> middle = [.. inWindow.Skip(inWindow.Count / 3).Take(inWindow.Count - 2 * (inWindow.Count / 3))];
+                List<FilmScore> fresh = [.. middle.Where(x => !recent.Contains(x.FilmId))];
+                List<FilmScore> choices = fresh.Count > 0 ? fresh : middle;
+                return choices[Random.Shared.Next(choices.Count)];
             }
         }
+    }
+
+    /// <summary>
+    /// Gets the films asked about in the most recent questions, across all films.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    private async Task<HashSet<int>> GetRecentOpponentsAsync(CancellationToken cancellationToken)
+    {
+        return [.. await db.FilmComparisons.OrderByDescending(x => x.CreatedAt).Take(options.Value.RecentOpponents).Select(x => x.OtherFilmId).ToListAsync(cancellationToken)];
+    }
+
+    /// <summary>
+    /// Picks a random settled film between where a film is heading and its original band, if it's heading far enough from its original rating to double-check; null otherwise or if there are none left to ask.
+    /// </summary>
+    /// <param name="film">The film being ranked.</param>
+    /// <param name="state">Its placement state.</param>
+    /// <param name="pool">The settled films it hasn't been asked about.</param>
+    private FilmScore? PickBigMoveCheck(Film film, RankingState state, List<FilmScore> pool)
+    {
+        int targetBand = FilmScore.BandFor(SettledScore(state));
+        if (Math.Abs(targetBand - film.Rating) < options.Value.BigMoveBands)
+        {
+            return null;
+        }
+        List<FilmScore> between = targetBand < film.Rating ? [.. pool.Where(x => x.Score >= state.Upper && x.Score <= (film.Rating - 1) * 10)] : [.. pool.Where(x => x.Score <= state.Lower && x.Score >= film.Rating * 10)];
+        return between.Count == 0 ? null : between[Random.Shared.Next(between.Count)];
+    }
+
+    /// <summary>
+    /// Returns the score a film settles at: halfway between the films either side of it.
+    /// </summary>
+    /// <param name="state">Its placement state.</param>
+    private static double SettledScore(RankingState state)
+    {
+        return Math.Clamp((state.Lower + state.Upper) / 2, 0.5, 100);
     }
 
     /// <summary>
@@ -271,7 +319,7 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
     private async Task<string> SettleAsync(FilmScore score, RankingState state, Film film, CancellationToken cancellationToken)
     {
         DateTime now = DateTime.UtcNow;
-        score.Score = Math.Clamp((state.Lower + state.Upper) / 2, 0.5, 100);
+        score.Score = SettledScore(state);
         score.IsSettled = true;
         score.SettledAt = now;
         score.UpdatedAt = now;
@@ -282,22 +330,23 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
     }
 
     /// <summary>
-    /// Handles answers that contradict the current order: the two films they disagree about become unsettled and stop being anchors, so they're re-ranked like any other film, and the film being ranked starts again.
+    /// Handles answers that contradict the current order: the film being ranked starts again, and for a real clash the two films the answers disagree about also become unsettled and stop being anchors, so they're re-ranked like any other film.
     /// </summary>
     /// <param name="score">The film's score, tracked.</param>
     /// <param name="state">Its placement state.</param>
     /// <param name="scores">Every film's score, tracked and keyed by film ID.</param>
     /// <param name="film">The film being ranked.</param>
+    /// <param name="knockBack">Whether to unsettle the clashing films too; false when a double-check failed, since the film's own answers were off.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    private async Task<string> RestartAsync(FilmScore score, RankingState state, Dictionary<int, FilmScore> scores, Film film, CancellationToken cancellationToken)
+    private async Task<string> RestartAsync(FilmScore score, RankingState state, Dictionary<int, FilmScore> scores, Film film, bool knockBack, CancellationToken cancellationToken)
     {
         DateTime now = DateTime.UtcNow;
         List<int> clashing = [];
-        if (state.LowerFilmId is int lowerFilmId)
+        if (knockBack && state.LowerFilmId is int lowerFilmId)
         {
             clashing.Add(lowerFilmId);
         }
-        if (state.UpperFilmId is int upperFilmId)
+        if (knockBack && state.UpperFilmId is int upperFilmId)
         {
             clashing.Add(upperFilmId);
         }
@@ -314,6 +363,10 @@ public partial class RankingService(MMDbContext db, IOptions<RankingOptions> opt
         await db.SaveChangesAsync(cancellationToken);
         List<string> titles = await db.Films.Where(x => clashing.Contains(x.FilmId)).Select(x => x.Title).ToListAsync(cancellationToken);
         LogRestarted(logger, film.Title, string.Join(", ", titles));
+        if (!knockBack)
+        {
+            return $"That didn't back up the big move for {film.Title}, so it starts again.";
+        }
         return titles.Count == 0 ? $"Those answers contradicted each other, so {film.Title} starts again." : $"Those answers clash with the current order, so {string.Join(" and ", titles)} will be ranked again and {film.Title} starts again.";
     }
 

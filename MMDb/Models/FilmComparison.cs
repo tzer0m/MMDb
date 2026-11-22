@@ -36,6 +36,11 @@ public class FilmComparison
     public ComparisonResult Result { get; set; }
 
     /// <summary>
+    /// Whether this was an extra question double-checking a big move away from the film's original rating.
+    /// </summary>
+    public bool IsCheck { get; set; }
+
+    /// <summary>
     /// When I answered (UTC).
     /// </summary>
     public DateTime CreatedAt { get; set; }

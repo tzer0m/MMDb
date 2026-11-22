@@ -61,11 +61,29 @@ public class FilmScore
     /// The score as a whole number from 1 to 100, as it is shown.
     /// </summary>
     [NotMapped]
-    public int DisplayScore => (int)Math.Clamp(Math.Round(Score, MidpointRounding.AwayFromZero), 1, 100);
+    public int DisplayScore => DisplayFor(Score);
 
     /// <summary>
     /// The 1 to 10 band the score falls in, matching the original rating scale.
     /// </summary>
     [NotMapped]
-    public int Band => (DisplayScore + 9) / 10;
+    public int Band => BandFor(Score);
+
+    /// <summary>
+    /// Returns a score as the whole number from 1 to 100 that is shown.
+    /// </summary>
+    /// <param name="score">The score.</param>
+    public static int DisplayFor(double score)
+    {
+        return (int)Math.Clamp(Math.Round(score, MidpointRounding.AwayFromZero), 1, 100);
+    }
+
+    /// <summary>
+    /// Returns the 1 to 10 band a score falls in, matching the original rating scale.
+    /// </summary>
+    /// <param name="score">The score.</param>
+    public static int BandFor(double score)
+    {
+        return (DisplayFor(score) + 9) / 10;
+    }
 }

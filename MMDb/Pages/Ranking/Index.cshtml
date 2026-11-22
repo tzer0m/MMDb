@@ -25,6 +25,10 @@
             {
                 <text>Anchor &middot; </text>
             }
+            @if (question.IsCheck)
+            {
+                <text>Double-checking a big move &middot; </text>
+            }
             @question.Comparisons of @question.ComparisonsNeeded answers
         </span>
     </div>
@@ -32,6 +36,7 @@
     <form method="post" asp-page-handler="Answer" id="rank-answer">
         <input type="hidden" name="filmId" value="@question.Film.FilmId" />
         <input type="hidden" name="otherFilmId" value="@opponent.FilmId" />
+        <input type="hidden" name="isCheck" value="@(question.IsCheck ? "true" : "false")" />
         <div class="row g-3 text-center mb-3">
             @{ await FilmChoice(question.Film, "Better", "rank-left", "\u2190"); }
             @{ await FilmChoice(opponent, "Worse", "rank-right", "\u2192"); }
@@ -109,10 +114,12 @@ else
     <script>
         // Arrow keys answer: left or right picks that film, down is about the same, up is don't remember, and backspace undoes.
         const keyButtons = { ArrowLeft: 'rank-left', ArrowRight: 'rank-right', ArrowDown: 'rank-similar', ArrowUp: 'rank-skip', Backspace: 'rank-undo' };
+        // Held keys and presses carried over from the last question are ignored, so one press only ever gives one answer.
+        const readyAt = performance.now() + 500;
         let answered = false;
         document.addEventListener('keydown', event => {
             const button = document.getElementById(keyButtons[event.key]);
-            if (!button || answered || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.target.closest('input, textarea, select')) {
+            if (!button || answered || event.repeat || performance.now() < readyAt || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.target.closest('input, textarea, select')) {
                 return;
             }
             event.preventDefault();

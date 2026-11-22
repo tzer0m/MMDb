@@ -123,6 +123,9 @@ namespace MMDb.Migrations
                     b.Property<int>("FilmId")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsCheck")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("OtherFilmId")
                         .HasColumnType("integer");
 

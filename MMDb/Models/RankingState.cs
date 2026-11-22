@@ -41,6 +41,16 @@ public class RankingState
     public ComparisonResult? LastResult { get; set; }
 
     /// <summary>
+    /// How many answers to questions double-checking a big move count so far, leaving out skips.
+    /// </summary>
+    public int Checks { get; set; }
+
+    /// <summary>
+    /// Whether the most recent answer was to a question double-checking a big move.
+    /// </summary>
+    public bool LastWasCheck { get; set; }
+
+    /// <summary>
     /// Whether the answers contradict each other: it beat a film ranked above one it lost to.
     /// </summary>
     public bool IsContradiction => Lower >= Upper;
@@ -59,11 +69,13 @@ public class RankingState
         {
             state.Asked.Add(answer.OtherFilmId);
             state.LastResult = answer.Result;
+            state.LastWasCheck = answer.IsCheck;
             if (answer.Result == ComparisonResult.Skipped || !scores.TryGetValue(answer.OtherFilmId, out FilmScore? other))
             {
                 continue;
             }
             state.Comparisons++;
+            state.Checks += answer.IsCheck ? 1 : 0;
             bool above = answer.Result == ComparisonResult.Better || answer.Result == ComparisonResult.Similar && !previousSimilar;
             if (above && other.Score > state.Lower)
             {
