@@ -31,6 +31,11 @@ public class IndexModel(MMDbContext db, RankingService ranking, JellyfinClient j
     public List<string> Messages { get; set; } = [];
 
     /// <summary>
+    /// Whether to go back to the film's page once it settles, rather than carrying on to the next film.
+    /// </summary>
+    public bool Back { get; set; }
+
+    /// <summary>
     /// How many films have a settled score, not counting linked films.
     /// </summary>
     public int Settled { get; set; }
@@ -44,9 +49,11 @@ public class IndexModel(MMDbContext db, RankingService ranking, JellyfinClient j
     /// Finds the next question, for the given film if it is still waiting to be ranked, otherwise for the next film in the queue.
     /// </summary>
     /// <param name="filmId">The film to rank, if one was chosen.</param>
+    /// <param name="back">Whether to go back to the chosen film's page once it settles.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task OnGetAsync(int? filmId, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnGetAsync(int? filmId, bool back, CancellationToken cancellationToken)
     {
+        Back = back && filmId is not null;
         if (TempData["Message"] is string message)
         {
             Messages.Add(message);
@@ -69,15 +76,26 @@ public class IndexModel(MMDbContext db, RankingService ranking, JellyfinClient j
             {
                 await PushToJellyfinAsync(id, cancellationToken);
             }
+            // A film added or re-ranked from its page goes back there once it's done.
+            if (Back && id == filmId && (question is null || question.IsSettled))
+            {
+                if (Messages.Count > 0)
+                {
+                    TempData["Message"] = string.Join(" ", Messages);
+                }
+                return RedirectToPage("/Films/Details", new { id });
+            }
             if (question?.Opponent is not null)
             {
                 Question = question;
                 break;
             }
-            nextId = null;
+            // A film that restarted after a clash carries on being ranked; otherwise move to the next film.
+            nextId = question is not null && !question.IsSettled ? id : null;
         }
         Total = await db.FilmScores.CountAsync(x => x.LinkedToFilmId == null, cancellationToken);
         Settled = await db.FilmScores.CountAsync(x => x.IsSettled && x.LinkedToFilmId == null, cancellationToken);
+        return Page();
     }
 
     /// <summary>
@@ -86,25 +104,27 @@ public class IndexModel(MMDbContext db, RankingService ranking, JellyfinClient j
     /// <param name="filmId">The film being ranked.</param>
     /// <param name="otherFilmId">The film it was compared with.</param>
     /// <param name="result">My answer.</param>
+    /// <param name="back">Whether to go back to the film's page once it settles.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task<IActionResult> OnPostAnswerAsync(int filmId, int otherFilmId, ComparisonResult result, CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostAnswerAsync(int filmId, int otherFilmId, ComparisonResult result, bool back, CancellationToken cancellationToken)
     {
         bool saved = await ranking.AnswerAsync(filmId, otherFilmId, result, cancellationToken);
-        return RedirectToPage(new { filmId = saved ? filmId : (int?)null });
+        return RedirectToPage(new { filmId = saved ? filmId : (int?)null, back = saved && back });
     }
 
     /// <summary>
     /// Takes back the most recent answer and returns to that film.
     /// </summary>
+    /// <param name="back">Whether to go back to the film's page once it settles.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
-    public async Task<IActionResult> OnPostUndoAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> OnPostUndoAsync(bool back, CancellationToken cancellationToken)
     {
         int? filmId = await ranking.UndoAsync(cancellationToken);
         if (filmId is null)
         {
             TempData["Message"] = "There's nothing to undo.";
         }
-        return RedirectToPage(new { filmId });
+        return RedirectToPage(new { filmId, back = filmId is not null && back });
     }
 
     /// <summary>
@@ -115,7 +135,7 @@ public class IndexModel(MMDbContext db, RankingService ranking, JellyfinClient j
     public async Task<IActionResult> OnPostRerankAsync(int filmId, CancellationToken cancellationToken)
     {
         int? rankId = await ranking.RerankAsync(filmId, cancellationToken);
-        return rankId is int id ? RedirectToPage(new { filmId = id }) : NotFound();
+        return rankId is int id ? RedirectToPage(new { filmId = id, back = true }) : NotFound();
     }
 
     /// <summary>

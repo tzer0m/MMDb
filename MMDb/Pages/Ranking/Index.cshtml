@@ -23,6 +23,7 @@
     <form method="post" asp-page-handler="Answer" id="rank-answer">
         <input type="hidden" name="filmId" value="@question.Film.FilmId" />
         <input type="hidden" name="otherFilmId" value="@opponent.FilmId" />
+        <input type="hidden" name="back" value="@(Model.Back ? "true" : "false")" />
         <div class="row g-3 text-center mb-3">
             @{ await FilmChoice(question.Film, "Better", "rank-left", "\u2190"); }
             @{ await FilmChoice(opponent, "Worse", "rank-right", "\u2192"); }
@@ -34,6 +35,7 @@
     </form>
     <div class="d-flex gap-2 mt-3">
         <form method="post" asp-page-handler="Undo" class="flex-fill">
+            <input type="hidden" name="back" value="@(Model.Back ? "true" : "false")" />
             <button type="submit" id="rank-undo" class="btn btn-outline-secondary w-100">Undo <span class="small opacity-75">Backspace</span></button>
         </form>
         <a asp-page="/Films/Details" asp-route-id="@question.Film.FilmId" class="btn btn-outline-secondary flex-fill">Finish Later</a>

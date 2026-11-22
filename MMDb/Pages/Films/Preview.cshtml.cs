@@ -108,7 +108,7 @@ public partial class PreviewModel(MMDbContext db, FilmDataService filmData, OMDb
         Input.ApplyTo(film);
         db.Films.Add(film);
         await db.SaveChangesAsync(cancellationToken);
-        return RedirectToPage("/Ranking/Index", new { filmId = film.FilmId });
+        return RedirectToPage("/Ranking/Index", new { filmId = film.FilmId, back = true });
     }
 
     /// <summary>
