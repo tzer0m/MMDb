@@ -28,17 +28,17 @@
             @{ await FilmChoice(question.Film, "Better", "rank-left", "\u2190"); }
             @{ await FilmChoice(opponent, "Worse", "rank-right", "\u2192"); }
         </div>
-        <div class="d-flex gap-2">
-            <button type="submit" id="rank-similar" name="result" value="Similar" class="btn btn-secondary btn-lg flex-fill py-3">About the Same <span class="small opacity-75">&darr;</span></button>
-        </div>
-        <button type="submit" id="rank-skip" name="result" value="Skipped" class="btn btn-outline-secondary w-100 mt-2">Don't Remember @opponent.Title <span class="small opacity-75">&uarr;</span></button>
     </form>
-    <div class="d-flex gap-2 mt-3">
-        <form method="post" asp-page-handler="Undo" class="flex-fill">
-            <input type="hidden" name="back" value="@(Model.Back ? "true" : "false")" />
-            <button type="submit" id="rank-undo" class="btn btn-outline-secondary w-100">Undo <span class="small opacity-75">Backspace</span></button>
-        </form>
-        <a asp-page="/Films/Details" asp-route-id="@question.Film.FilmId" class="btn btn-outline-secondary flex-fill">Finish Later</a>
+    <div class="rank-actions position-sticky bottom-0 bg-body border-top pt-2 pb-3">
+        <button type="submit" form="rank-answer" id="rank-similar" name="result" value="Similar" class="btn btn-secondary btn-lg w-100 py-md-3 mb-2">About the Same <span class="small opacity-75 d-none d-md-inline">&darr;</span></button>
+        <div class="d-flex gap-2">
+            <button type="submit" form="rank-answer" id="rank-skip" name="result" value="Skipped" class="btn btn-outline-secondary flex-fill text-truncate" title="Don't Remember @opponent.Title">Don't Remember<span class="d-none d-md-inline"> @opponent.Title <span class="small opacity-75">&uarr;</span></span></button>
+            <form method="post" asp-page-handler="Undo" class="d-flex">
+                <input type="hidden" name="back" value="@(Model.Back ? "true" : "false")" />
+                <button type="submit" id="rank-undo" class="btn btn-outline-secondary">Undo<span class="small opacity-75 d-none d-md-inline"> Backspace</span></button>
+            </form>
+            <a asp-page="/Films/Details" asp-route-id="@question.Film.FilmId" class="btn btn-outline-secondary text-nowrap">Finish Later</a>
+        </div>
     </div>
 }
 else if (Model.Settled == 0)
@@ -64,21 +64,18 @@ else
     async Task FilmChoice(Film film, string result, string id, string key)
     {
         <div class="col-6">
-            <button type="submit" id="@id" name="result" value="@result" class="btn btn-outline-secondary w-100 h-100 p-2 p-md-3" title="@film.Title is better (@key)">
-                <span class="d-block mx-auto" style="max-width: 220px">
+            <button type="submit" id="@id" name="result" value="@result" class="btn btn-outline-secondary w-100 h-100 p-2 p-md-3 d-flex flex-column justify-content-start" title="@film.Title is better (@key)">
+                <span class="d-block mx-auto rank-poster">
                     <span class="d-block ratio rounded overflow-hidden bg-body-secondary mb-2" style="--bs-aspect-ratio: 150%">
                         @if (await Posters.UrlAsync(film.TMDbId, film.IMDbId, film.PosterPath, 342) is string posterUrl)
                         {
                             <img src="@posterUrl" alt="@film.Title poster" class="object-fit-cover" />
                         }
                     </span>
-                    <span class="d-block fw-semibold text-body">@film.Title</span>
-                    <span class="d-block text-muted small">@film.Year <span class="opacity-75">@key</span></span>
                 </span>
-                @if (!string.IsNullOrWhiteSpace(film.Overview))
-                {
-                    <span class="d-block text-muted small text-start mt-2 rank-synopsis">@film.Overview</span>
-                }
+                <span class="fw-semibold text-body rank-title">@film.Title</span>
+                <span class="d-block text-muted small">@film.Year <span class="opacity-75">@key</span></span>
+                <span class="text-muted small text-start mt-2 rank-synopsis">@film.Overview</span>
             </button>
         </div>
     }
@@ -86,13 +83,37 @@ else
 
 @section Styles {
     <style>
-        /* Keep long synopses to a few lines so both films stay the same height. */
+        /* A fixed width, so a short title doesn't shrink the poster. */
+        .rank-poster {
+            width: 100%;
+            max-width: 220px;
+        }
+
+        /* Titles and synopses always take the same space, clamped and padded to 2 and 5 lines, so the posters, text and buttons stay in place from one question to the next. Clamping needs -webkit-box, so these spans mustn't also have d-block. */
+        .rank-title,
         .rank-synopsis {
             display: -webkit-box;
             -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .rank-title {
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            min-height: 3em;
+        }
+
+        .rank-synopsis {
             -webkit-line-clamp: 5;
             line-clamp: 5;
-            overflow: hidden;
+            min-height: 7.5em;
+        }
+
+        /* On phones, smaller posters keep more of both films in view above the answer buttons, which stay pinned to the bottom. */
+        @@media (max-width: 767.98px) {
+            .rank-poster {
+                max-width: 130px;
+            }
         }
     </style>
 }

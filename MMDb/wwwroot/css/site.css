@@ -63,8 +63,19 @@
   height: 64px;
 }
 
+/* Buttons beside the rating badges match their height, even when they wrap onto their own line: a badge is 1em of text plus 0.35em padding top and bottom, and the button's 1px border comes out of its padding. */
+.rating-action {
+  line-height: 1;
+  padding-top: 0.35em;
+  padding-bottom: 0.35em;
+}
+
 /* Smaller text, badges and posters on phones. */
 @media (max-width: 767.98px) {
+  .navbar .btn {
+    padding: 0.375rem 0.5rem;
+  }
+
   .detail-header h1 {
     font-size: 1.5rem;
   }
@@ -85,6 +96,13 @@
   .film-table .photo-placeholder {
     width: 32px;
     height: 48px;
+  }
+}
+
+/* On the narrowest phones, the logo alone leaves room for every navbar button on one line. */
+@media (max-width: 399.98px) {
+  .brand-name {
+    display: none;
   }
 }
 
